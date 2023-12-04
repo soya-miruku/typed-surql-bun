@@ -181,6 +181,7 @@ export interface Connection {
     }) => MaybePromise<void>;
     info?: <T extends Record<string, unknown> = Record<string, unknown>>() => Promise<T | undefined>;
     signup: (vars: ScopeAuth) => Promise<Token>;
+    // biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
     signin: (vars: AnyAuth) => Promise<Token | void>;
     authenticate: (token: Token) => MaybePromise<boolean>;
     invalidate: () => MaybePromise<void>;
