@@ -6,7 +6,6 @@ import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/
 import { extractToId, floatJSONReplacer } from "./utils/parsers.ts";
 import { Idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
-import { sleep } from "bun";
 
 export type SubscribeResponse<T> = {
   [Symbol.asyncIterator](): {
@@ -89,7 +88,7 @@ export class ModelInstance<SubModel extends Model> {
 
         return {
           async next() {
-            await sleep(100);
+            await new Promise((resolve) => setTimeout(resolve, 100));
             return Promise.resolve({ value: output, done: false })
           },
           return(id: string) {
@@ -97,11 +96,11 @@ export class ModelInstance<SubModel extends Model> {
             kill(killId!);
             return Promise.resolve({ value: undefined, done: true });
           },
-          throw(e: Error) {
-            console.log("Killing", killId);
-            kill(killId!);
-            return Promise.reject(e);
-          }
+          // throw(e: Error) {
+          //   console.log("Killing", killId);
+          //   kill(killId!);
+          //   return Promise.reject(e);
+          // }
         }
       }
     }
