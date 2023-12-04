@@ -77,7 +77,7 @@ export class ModelInstance<SubModel extends Model> {
     const kill = this.kill.bind(this);
     return {
       [Symbol.asyncIterator]() {
-        let output: LiveQueryResponse<OnlyFields<SubModel>> | null = null;
+        let output: LiveQueryResponse<OnlyFields<SubModel>> | { action: "EMPTY", result: [] } = { action: "EMPTY", result: [] }
         let killId: string | null = null;
 
         live((data) => { output = data ?? null; }, diff).then(id => { killId = id; });

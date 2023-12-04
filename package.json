@@ -1,7 +1,17 @@
 {
   "name": "@soyamiruku/typed-surql-bun",
+  "description": "SurrealDB Extra",
+  "version": "1.5.1",
   "module": "src/index.ts",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soya-miruku/typed-surql-bun.git"
+  },
+  "author": {
+    "name": "Soya Miruku",
+    "url": "https://github.com/soya-miruku"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
