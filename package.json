@@ -1,0 +1,26 @@
+{
+  "name": "@soyamiruku/typed-surql-bun",
+  "module": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./types": "./src/types/index.ts",
+    "./functions": "./src/functions/index.ts"
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --splitting --format esm --outdir ./dist"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "type-fest": "^4.8.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "reflect-metadata": "0.1.13",
+    "@sinclair/typebox": "^0.31.28",
+    "surrealdb.js": "^0.11.0"
+  }
+}

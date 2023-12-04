@@ -1,0 +1,2 @@
+[install]
+registry = { url = "https://registry.npmjs.org", token = "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" }
