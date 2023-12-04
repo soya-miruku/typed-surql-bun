@@ -6,6 +6,7 @@ import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/
 import { extractToId, floatJSONReplacer } from "./utils/parsers.ts";
 import { Idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
+import { sleep } from "bun";
 
 export type SubscribeResponse<T> = {
   [Symbol.asyncIterator](): {
@@ -71,7 +72,7 @@ export class ModelInstance<SubModel extends Model> {
     return await (this.surql.client as Surreal).live<Record<string, OnlyFields<SubModel>>>(this.surql.getTableName(this.ctor), callback as any, diff);
   }
 
-  public subscribe(diff?: boolean) {
+  public subscribe(filter?: LiveQueryResponse['action'], diff?: boolean) {
     if (this.surql.STRATEGY === "HTTP") throw new Error("Live queries are not supported in HTTP mode");
     const live = this.live.bind(this);
     const kill = this.kill.bind(this);
@@ -80,16 +81,26 @@ export class ModelInstance<SubModel extends Model> {
         let output: LiveQueryResponse<OnlyFields<SubModel>> | { action: "EMPTY", result: [] } = { action: "EMPTY", result: [] }
         let killId: string | null = null;
 
-        live((data) => { output = data ?? null; }, diff).then(id => { killId = id; });
+        live((data) => {
+          if (filter && data.action !== filter) return;
+          output = data ?? null;
+        }, diff)
+          .then(id => { killId = id; });
+
         return {
           async next() {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            return Promise.resolve({ value: output, done: false });
+            await sleep(100);
+            return Promise.resolve({ value: output, done: false })
           },
           return(id: string) {
             console.log("Killing", id);
             kill(killId!);
             return Promise.resolve({ value: undefined, done: true });
+          },
+          throw(e: Error) {
+            console.log("Killing", killId);
+            kill(killId!);
+            return Promise.reject(e);
           }
         }
       }
@@ -247,8 +258,8 @@ export class Model implements IModel {
     return await new ModelInstance(this).live(callback, diff);
   }
 
-  public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, diff?: boolean) {
-    return new ModelInstance(this).subscribe(diff);
+  public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, filter?: LiveQueryResponse['action'], diff?: boolean) {
+    return new ModelInstance(this).subscribe(filter, diff);
   }
 
   public static async kill<SubModel extends Model>(this: { new(): SubModel }, uuid: string) {
