@@ -13,11 +13,7 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
   database: "test"
 })
 
-const liveQuery = User.$subscribe();
-
-setTimeout(() => {
-  liveQuery.close();
-}, 10000);
+const liveQuery = User.$subscribe("DELETE");
 
 for await (const data of liveQuery) {
   console.log(data)
