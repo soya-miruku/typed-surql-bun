@@ -5,7 +5,7 @@ import { Model } from "../model";
 import { Static } from "../exports";
 import { sleep } from "./helper";
 
-export class SubscriptionAsyncIterator<SubModel extends Model, Instance = InstanceType<Constructor<SubModel>>> implements AsyncIterator<LiveQueryResponse<Static<SubModel>> | undefined> {
+export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncIterator<LiveQueryResponse<Static<SubModel>> | undefined> {
   private readonly emitter;
   public isSubscribed = false;
   private current: LiveQueryResponse<Static<SubModel>> | undefined;
@@ -28,6 +28,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model, Instance = Instan
   }
 
   public async return(): Promise<IteratorResult<LiveQueryResponse<Static<SubModel>>, any>> {
+    console.log(`Unsubscribed from ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`);
     if (this.uuid)
       await (this.model as unknown as typeof Model).kill(this.uuid);
     this.isSubscribed = false;
@@ -35,6 +36,8 @@ export class SubscriptionAsyncIterator<SubModel extends Model, Instance = Instan
   }
 
   public throw(e: Error): Promise<IteratorResult<LiveQueryResponse<Static<SubModel>>, any>> {
+    console.error(e);
+    this.return();
     return Promise.resolve({ value: undefined, done: true });
   }
 
@@ -56,7 +59,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model, Instance = Instan
 
 }
 
-export class Subscriber<SubModel extends Model, Instance = InstanceType<Constructor<SubModel>>> extends EventEmitter {
+export class Subscriber<SubModel extends Model> extends EventEmitter {
   constructor(private readonly model: SubModel) {
     super();
   }
