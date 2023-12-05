@@ -9,3 +9,4 @@ export * from "./permissions.ts";
 export * from './scope.ts';
 export * from "./token.ts";
 export * from "./utils/query.ts";
+export * from './logic/model-instance.ts'
