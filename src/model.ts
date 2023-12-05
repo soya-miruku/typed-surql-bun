@@ -6,6 +6,9 @@ import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/
 import { extractToId, floatJSONReplacer } from "./utils/parsers.ts";
 import { Idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
+import { sleep } from "./utils/helper.ts";
+import { Static } from "./exports.ts";
+import EventEmitter from "events";
 
 export type SubscribeResponse<T> = {
   [Symbol.asyncIterator](): {
@@ -28,8 +31,52 @@ export type InfoForTable = {
   tables: Record<string, string>;
 }
 
+export class Subscriber<SubModel extends Model, Instance = InstanceType<Constructor<SubModel>>> extends EventEmitter {
+  constructor(private readonly model: SubModel) {
+    super();
+  }
+  private current: LiveQueryResponse<Static<Instance & IModel>> | undefined;
+  private uuid: string | undefined;
+  public isSubscribed = false;
+
+  async *subscriber() {
+    this.uuid = await (this.model as unknown as typeof Model).live((data) => {
+      this.current = data as LiveQueryResponse<Static<Instance & IModel>>;
+      this.emit('dataAvailable');
+    });
+
+    console.log(`Subscribed to ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`)
+    while (this.isSubscribed) {
+      await this.waitForData();
+      yield this.current;
+      this.current = undefined;
+      await sleep(48);
+    }
+  }
+
+  async waitForData() {
+    return new Promise((resolve) => {
+      this.once('dataAvailable', resolve);
+    });
+  }
+
+  subscribe() {
+    this.isSubscribed = true;
+    return this.subscriber();
+  }
+
+  unsubscribe() {
+    this.isSubscribed = false;
+    if (this.uuid)
+      (this.model as unknown as typeof Model).kill(this.uuid);
+  }
+}
+
 export class ModelInstance<SubModel extends Model> {
-  constructor(private readonly ctor: Constructor<SubModel>, private readonly surql = TypedSurQL) { }
+  private readonly subscriber: Subscriber<SubModel>;
+  constructor(private readonly ctor: Constructor<SubModel>, private readonly surql = TypedSurQL) {
+    this.subscriber = new Subscriber(ctor as unknown as SubModel);
+  }
 
   public async migrate() {
     const table = this.surql.getTable(this.ctor);
@@ -73,37 +120,14 @@ export class ModelInstance<SubModel extends Model> {
 
   public subscribe(filter?: LiveQueryResponse['action'], diff?: boolean) {
     if (this.surql.STRATEGY === "HTTP") throw new Error("Live queries are not supported in HTTP mode");
-    const live = this.live.bind(this);
-    const kill = this.kill.bind(this);
     return {
-      [Symbol.asyncIterator]() {
-        let output: LiveQueryResponse<OnlyFields<SubModel>> | { action: "EMPTY", result: [] } = { action: "EMPTY", result: [] }
-        let killId: string | null = null;
-
-        live((data) => {
-          if (filter && data.action !== filter) return;
-          output = data ?? null;
-        }, diff)
-          .then(id => { killId = id; });
-
-        return {
-          async next() {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            return Promise.resolve({ value: output, done: false })
-          },
-          return(id: string) {
-            console.log("Killing", id);
-            kill(killId!);
-            return Promise.resolve({ value: undefined, done: true });
-          },
-          // throw(e: Error) {
-          //   console.log("Killing", killId);
-          //   kill(killId!);
-          //   return Promise.reject(e);
-          // }
-        }
-      }
+      [Symbol.asyncIterator]: () => this.subscriber.subscribe(),
+      close: () => this.subscriber.unsubscribe(),
     }
+  }
+
+  public unsubscribe() {
+    if (this.subscriber.isSubscribed) this.subscriber.unsubscribe();
   }
 
   public async select<Key extends keyof OnlyFields<SubModel>, Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never, WithValue extends boolean | undefined = undefined>(
@@ -258,6 +282,10 @@ export class Model implements IModel {
 
   public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, filter?: LiveQueryResponse['action'], diff?: boolean) {
     return new ModelInstance(this).subscribe(filter, diff);
+  }
+
+  public static $unsubscribe<SubModel extends Model>(this: { new(): SubModel }) {
+    return new ModelInstance(this).unsubscribe();
   }
 
   public static async kill<SubModel extends Model>(this: { new(): SubModel }, uuid: string) {
