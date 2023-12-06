@@ -71,14 +71,15 @@ class TypedSurQL {
     else this.STRATEGY = "HTTP";
   }
 
-  public init<Strategy extends boolean>(url: string, opts?: ConnectionOptions & { websocket?: Strategy }) {
-    if (!url) throw new Error("URL is required");
+  public setUrl(url: string) {
     this.url = url;
-    this.setStrategy(opts?.websocket);
+  }
+
+  public connect<Strategy extends boolean>(opts?: ConnectionOptions & { websocket?: Strategy }) {
     return new Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>((resolve, reject) => {
       const db = this.STRATEGY === "WS" ? new Surreal() : new ExperimentalSurrealHTTP();
       try {
-        void db.connect(url, opts as any).then(() => {
+        void db.connect(this.url, opts as any).then(() => {
           this.client = db as Surreal;
           resolve(db as SurrealStratClient<Strategy extends true ? "WS" : "HTTP">)
         });
@@ -88,12 +89,25 @@ class TypedSurQL {
     })
   }
 
-  [Symbol.asyncDispose]() {
-    return this.client.close();
+  public init<Strategy extends boolean>(url: string, opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
+  public init<Strategy extends boolean>(opts: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
+  public init<Strategy extends boolean>(urlOrOpts?: string | (ConnectionOptions & { websocket?: Strategy }), opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">> {
+    let url: string | undefined;
+    if (typeof urlOrOpts === 'string') {
+      url = urlOrOpts;
+    } else {
+      opts = urlOrOpts;
+    }
+    if (!url && !this.url) throw new Error("No url provided");
+    if (url) {
+      this.url = url;
+    }
+    this.setStrategy(opts?.websocket);
+    return this.connect(opts);
   }
 
-  public async scopedAuth(auth: AnyAuth | Token) {
-    const db = await this.new(this.url, { auth })
+  public async scopedAuth(auth: AnyAuth | Token, url?: string) {
+    const db = await this.new(url ?? this.url, { auth })
     return {
       conn: db,
       [Symbol.asyncDispose]: async () => {
@@ -144,7 +158,7 @@ class TypedSurQL {
   public magic<M extends Constructor<ModelBase>, T, Ins = Instance<M>>(m: M, fn: (q: typeof ql<T>, fn: FnBody<Ins>) => SQL, currentSql = "") {
     const fnBody = this.createFnBody<M, Ins>(m);
     const sql = fn(ql<T>, fnBody);
-    currentSql += sql.toString() + ";";
+    currentSql += `${sql.toString()};`;
     return {
       pipe: <NewModel extends Constructor<ModelBase>>(newModel: NewModel, fn: (q: typeof ql<T>, field: FnBody<Instance<NewModel>>) => SQL) => this.magic(newModel, fn, currentSql),
       exec: async <TResponse extends RawQueryResult[]>() => {
@@ -168,8 +182,8 @@ class TypedSurQL {
       return acc;
     }, {} as any)
 
-    const signInQuery = signin && signin({ ql, fn: fnBody, ...parsedProps });
-    const signUpQuery = signup && signup({ ql, fn: fnBody, ...parsedProps });
+    const signInQuery = signin?.({ ql, fn: fnBody, ...parsedProps });
+    const signUpQuery = signup?.({ ql, fn: fnBody, ...parsedProps });
 
     query += "\n";
 

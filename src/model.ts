@@ -26,8 +26,8 @@ export class Model implements IModel {
     Object.assign(this, props);
   }
 
-  public static async scopedAuth<SubModel extends Model>(this: { new(): SubModel }, auth: AnyAuth | Token) {
-    const newScope = await TypedSurQL.scopedAuth(auth);
+  public static async scopedAuth<SubModel extends Model>(this: { new(): SubModel }, auth: AnyAuth | Token, url?: string) {
+    const newScope = await TypedSurQL.scopedAuth(auth, url);
     const instance = new ModelInstance(this, newScope.conn);
     return {
       model: instance,
