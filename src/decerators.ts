@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { Kind, Optional, TObject, TProperties, TRecord, Type } from "@sinclair/typebox";
-import type { OnlyFields, StaticModel, Constructor, IModel, DotNestedKeys } from "./types/types.ts";
+import type { OnlyFields, StaticModel, Constructor, IModel, DotNestedKeys, FunctionType } from "./types/types.ts";
 import type { Class } from "type-fest";
 
 export type ITable<SubModel extends IModel, K extends keyof SubModel = keyof SubModel, P = keyof OnlyFields<SubModel> & K> = {
@@ -9,7 +9,7 @@ export type ITable<SubModel extends IModel, K extends keyof SubModel = keyof Sub
 };
 
 export type DirViaOptions<Via extends StaticModel> = "->" | "<-" | ".*" | `.*.${DotNestedKeys<Via extends Constructor<infer V> ? OnlyFields<V> : never>}`;
-export type DirToOptions<DirTo extends any> = DirTo extends "->" | "<-" ? StaticModel : never;
+export type DirToOptions<DirTo> = DirTo extends "->" | "<-" ? StaticModel : never;
 
 export type IRelationParams<From extends IModel, Via extends StaticModel, To extends StaticModel> = {
   from: From;
@@ -35,7 +35,7 @@ export interface IFieldProps<SubModel extends IModel> {
 }
 
 export function Table<SubModel extends IModel>(props?: ITable<SubModel, keyof SubModel>) {
-  return function (ctor: Constructor<SubModel>) {
+  return (ctor: Constructor<SubModel>) => {
     Reflect.defineMetadata('table', { name: props?.name ?? ctor.name, indexes: props?.indexes }, ctor);
   }
 }
@@ -55,9 +55,10 @@ function parseTObject<T extends TObject | TRecord>(t: T) {
   return properties;
 }
 
-export type TypeValue = Class<unknown> | Function | object | symbol;
+export type TypeValue = Class<unknown> | FunctionType | object | symbol;
 export type RecursiveArray<TValue> = Array<RecursiveArray<TValue> | TValue>;
 export type ReturnTypeFuncValue = TypeValue | RecursiveArray<TypeValue> | TObject | TProperties;
+// biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
 export type ReturnTypeFunc = (returns?: void) => ReturnTypeFuncValue;
 
 export interface TypeDecoratorParams<T> {
@@ -80,14 +81,14 @@ export function getTypeDecoratorParams<T extends object>(returnTypeFuncOrOptions
 function getType(returnTypeFunc: ReturnTypeFunc): TypeValue {
   const typeval = returnTypeFunc();
   let typeItem = Array.isArray(typeval) ? typeval[0] : typeval;
-  if (!(typeof typeItem == "function" && typeItem.prototype !== undefined && typeItem.prototype.constructor !== undefined)) {
+  if (!(typeof typeItem === "function" && typeItem.prototype !== undefined && typeItem.prototype.constructor !== undefined)) {
     typeItem = parseTObject(typeItem);
   }
   return typeItem;
 }
 
 export function Prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps?: IFieldProps<SubModel>) {
-  return function (target: SubModel, propertyKey: keyof SubModel) {
+  return (target: SubModel, propertyKey: keyof SubModel) => {
     if (typeof propertyKey === "symbol") {
       throw new Error("Symbol properties are not supported");
     }
@@ -113,13 +114,13 @@ export function Prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
 }
 
 export function Idx() {
-  return function <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) {
+  return <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) => {
     Reflect.defineMetadata("Idx", { name: propertyKey, isArray: false, type: "Id" }, target.constructor);
   }
 }
 
 export function Record<ModelType extends Constructor<IModel>>(recType: ModelType) {
-  return function <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) {
+  return <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) => {
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
     let type = Reflect.getMetadata("design:type", target, propertyKey.toString());
@@ -147,7 +148,7 @@ export function Relation<SubModel extends IModel,
   Via extends StaticModel,
   ViaSelectors extends DirViaOptions<Via>,
   To extends StaticModel>(dirVia: DirVia, via: Via, select?: ViaSelectors | DirTo, to?: To) {
-  return function (target: SubModel, propertyKey: keyof SubModel) {
+  return (target: SubModel, propertyKey: keyof SubModel) => {
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
     const field = {

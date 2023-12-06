@@ -5,6 +5,7 @@ import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/
 import { Idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
+import { WhereSelector } from "./logic/where.ts";
 
 export class Model implements IModel {
   @Idx() public id!: string;
@@ -43,12 +44,12 @@ export class Model implements IModel {
     return await new ModelInstance(this).info();
   }
 
-  public static async live<SubModel extends Model>(this: { new(): SubModel }, callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, diff?: boolean): Promise<string> {
-    return await new ModelInstance(this).live(callback, diff);
+  public static async live<SubModel extends Model>(this: { new(): SubModel }, callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, filter?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
+    return await new ModelInstance(this).live(callback, filter, diff);
   }
 
-  public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, filter?: LiveQueryResponse['action'], diff?: boolean) {
-    return new ModelInstance(this).subscribe(filter, diff);
+  public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean) {
+    return new ModelInstance(this).subscribe(action, filter, diff);
   }
 
   public static $unsubscribe<SubModel extends Model>(this: { new(): SubModel }) {
@@ -66,7 +67,7 @@ export class Model implements IModel {
       fetch?: Fetch[],
       id?: string,
       value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
-      where?: SQL
+      where?: SQL | WhereSelector<SubModel>,
       logQuery?: boolean
     }
   ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue>[]> {

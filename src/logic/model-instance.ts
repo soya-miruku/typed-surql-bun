@@ -7,6 +7,7 @@ import { InfoForTable } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
 import { SubscriptionAsyncIterator } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
+import { WhereFilter, WhereSelector } from "./where.ts";
 
 export class ModelInstance<SubModel extends Model> {
   private subscriber!: SubscriptionAsyncIterator<SubModel> | null;;
@@ -47,13 +48,26 @@ export class ModelInstance<SubModel extends Model> {
     return await this.surql.client.kill(uuid);
   }
 
-  public async live(callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, diff?: boolean): Promise<string> {
+  public async live(callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, condition?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
     if (this.surql.STRATEGY === "HTTP") throw new Error("Live queries are not supported in HTTP mode");
-    return await (this.surql.client as Surreal).live<Record<string, OnlyFields<SubModel>>>(this.surql.getTableName(this.ctor), callback as any, diff);
+
+    let where = "";
+    if (condition) {
+      if (condition instanceof SQL)
+        where = condition.toString();
+      else
+        where = new WhereFilter(this.ctor, condition).parse();
+    }
+
+    const query = `LIVE SELECT ${diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where}` : ""}`;
+    const response = await TypedSurQL.client.query(query);
+    if (response.length <= 0 || !response[0]) throw new Error("Live query failed to start");
+    if (callback) TypedSurQL.client.listenLive(response[0] as string, callback);
+    return response[0] as string;
   }
 
-  public subscribe(filter?: LiveQueryResponse['action'], diff?: boolean) {
-    return new SubscriptionAsyncIterator(this.ctor, { filter, diff });
+  public subscribe(action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean) {
+    return new SubscriptionAsyncIterator(this.ctor, { action, filter, diff });
   }
 
   public unsubscribe() {
@@ -69,7 +83,7 @@ export class ModelInstance<SubModel extends Model> {
       fetch?: Fetch[],
       id?: string,
       value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
-      where?: SQL
+      where?: SQL | WhereSelector<SubModel>,
       logQuery?: boolean
     }
   ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue>[]> {
@@ -94,8 +108,15 @@ export class ModelInstance<SubModel extends Model> {
       return `${field.name as string}`;
     });
 
+    let where = "";
+    if (options?.where) {
+      if (options?.where instanceof SQL)
+        where = options?.where.toString();
+      else
+        where = new WhereFilter(this.ctor, options?.where).parse();
+    }
     const from = options?.id ? options?.id.includes(":") ? `${tableName}:${options?.id.split(":")[1]}` : `${tableName}:${options?.id}` : tableName;
-    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${options?.where.toString()}` : ""}${options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""}`;
+    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""}`;
     options?.logQuery && console.log(query);
     return (await this.surql.client.query(query)).at(-1) as TransformSelected<SubModel, Key, Fetch, WithValue>[];
   }

@@ -2,8 +2,9 @@ import { Constructor } from "type-fest";
 import { LiveQueryResponse } from "../types/surreal-types";
 import EventEmitter from "events";
 import { Model } from "../model";
-import { Static } from "../exports";
+import { SQL, Static } from "../exports";
 import { sleep } from "./helper";
+import { WhereSelector } from "../logic/where";
 
 export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncIterator<LiveQueryResponse<Static<SubModel>> | undefined> {
   private readonly emitter;
@@ -11,7 +12,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncI
   private current: LiveQueryResponse<Static<SubModel>> | undefined;
   private uuid: string | undefined;
   private initilised = false;
-  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: { filter?: LiveQueryResponse['action'], diff?: boolean }) {
+  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: { action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean }) {
     this.emitter = new EventEmitter();
   }
 
@@ -43,12 +44,10 @@ export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncI
 
   public [Symbol.asyncIterator]() {
     (this.model as unknown as typeof Model).live((data) => {
-      if (this._opts?.filter && data.action !== this._opts.filter) return;
-
+      if ((this._opts?.action && this._opts.action !== "ALL") && data.action !== this._opts.action) return;
       this.current = data as LiveQueryResponse<Static<SubModel>>;
       this.emitter.emit('dataAvailable');
-
-    }, this._opts?.diff).then((uuid) => {
+    }, this._opts?.filter, this._opts?.diff).then((uuid) => {
       this.uuid = uuid;
       this.isSubscribed = true;
       this.initilised = true;

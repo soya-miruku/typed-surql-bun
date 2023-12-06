@@ -13,14 +13,14 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
   database: "test"
 })
 
-const liveQuery = User.$subscribe("DELETE");
+const bingo = await User.create({ name: "bingo", bestFriend: "user:0", todos: [{ title: "test", completed: false }, { title: "test2", completed: true }], email: "milking@email.com", password: "123" });
+const henry = await User.create({ name: "henry", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
+
+const liveQuery = User.$subscribe("ALL", { name: "henry" });
 
 for await (const data of liveQuery) {
   console.log(data)
 }
-
-const henry = await User.create({ name: "henry", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
-const bingo = await User.create({ name: "bingo", bestFriend: "user:0", todos: [{ title: "test", completed: false }, { title: "test2", completed: true }], email: "milking@email.com", password: "123" });
 
 const r_rel = await User.relate(henry.at(0)!.id, Friends, [User, bingo.at(0)!.id], {
   date: new Date()

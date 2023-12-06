@@ -53,7 +53,7 @@ export class Permissions<SubModel extends IModel, TokenType extends TokenAuthTyp
 			return acc;
 		}, {} as Record<string, qlFn>);
 
-		const extendedFnBody = Object.assign(fnBody, { $token: tokenObj, $scope: funcs.val(`$scope` ?? ""), $auth: authObj }) as any;
+		const extendedFnBody = Object.assign(fnBody, { $token: tokenObj, $scope: funcs.val("$scope" ?? ""), $auth: authObj }) as any;
 		let condition: string | SQL = "";
 		if (typeof perm === "string") {
 			condition = perm;
@@ -61,7 +61,7 @@ export class Permissions<SubModel extends IModel, TokenType extends TokenAuthTyp
 			condition = perm(extendedFnBody);
 			condition = condition.toString().includes("WHERE") ? condition : `WHERE ${condition}`;
 		}
-		const query = SQL.Create(["", `FOR ${type instanceof Array ? type.join(", ") : type} ${condition}`]);
+		const query = SQL.Create(["", `FOR ${Array.isArray(type) ? type.join(", ") : type} ${condition}`]);
 		this.query.push(query);
 		return this;
 	}
