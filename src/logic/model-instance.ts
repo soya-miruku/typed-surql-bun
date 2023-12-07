@@ -61,9 +61,9 @@ export class ModelInstance<SubModel extends Model> {
     }
 
     const query = `LIVE SELECT ${diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where}` : ""}`;
-    const response = await TypedSurQL.client.query(query);
+    const response = await this.surql.client.query(query);
     if (response.length <= 0 || !response[0]) throw new Error("Live query failed to start");
-    if (callback) TypedSurQL.client.listenLive(response[0] as string, callback);
+    if (callback) this.surql.client.listenLive(response[0] as string, callback);
     return response[0] as string;
   }
 
