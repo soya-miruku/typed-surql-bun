@@ -20,10 +20,16 @@ export type IRelationParams<From extends IModel, Via extends StaticModel, To ext
 };
 
 export type ObjType = Record<string, { type: ObjType, required: boolean, name: string, isObject: boolean }>;
+export type TypeValue = Class<unknown> | string | ObjType
+export type RecursiveArray<TValue> = Array<RecursiveArray<TValue> | TValue>;
+export type ReturnTypeFuncValue = TypeValue | RecursiveArray<TypeValue> | TObject | TProperties;
+// biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
+export type ReturnTypeFunc = (returns?: void) => ReturnTypeFuncValue;
 
 export type IFieldParams<SubModel extends IModel> = {
   name: keyof SubModel;
-  type?: string | ObjType;
+  type?: TypeValue;
+  typeName?: string;
   isArray: boolean;
   isObject: boolean;
   index?: { name: string, unique?: boolean, search?: boolean };
@@ -55,11 +61,6 @@ function parseTObject<T extends TObject | TRecord>(t: T) {
   return properties;
 }
 
-export type TypeValue = Class<unknown> | FunctionType | object | symbol;
-export type RecursiveArray<TValue> = Array<RecursiveArray<TValue> | TValue>;
-export type ReturnTypeFuncValue = TypeValue | RecursiveArray<TypeValue> | TObject | TProperties;
-// biome-ignore lint/suspicious/noConfusingVoidType: <explanation>
-export type ReturnTypeFunc = (returns?: void) => ReturnTypeFuncValue;
 
 export interface TypeDecoratorParams<T> {
   options: Partial<T>;
@@ -78,14 +79,43 @@ export function getTypeDecoratorParams<T extends object>(returnTypeFuncOrOptions
   };
 }
 
-function getType(returnTypeFunc: ReturnTypeFunc): TypeValue {
-  const typeval = returnTypeFunc();
-  let typeItem = Array.isArray(typeval) ? typeval[0] : typeval;
-  console.log(typeItem, 'typeItem')
-  if (!(typeof typeItem === "function" && typeItem.prototype !== undefined && typeItem.prototype.constructor !== undefined)) {
-    typeItem = parseTObject(typeItem);
+function findTypeValueArrayDepth([typeValueOrArray]: RecursiveArray<TypeValue>, innerDepth = 1): { depth: number; returnType: TypeValue } {
+  if (!Array.isArray(typeValueOrArray)) {
+    return { depth: innerDepth, returnType: typeValueOrArray };
   }
-  return typeItem;
+  return findTypeValueArrayDepth(typeValueOrArray, innerDepth + 1);
+}
+
+function isTypeboxType(value: any): boolean {
+  return typeof value === 'object' && value !== null && Kind in value;
+}
+
+function findType(returnTypeFunc: ReturnTypeFunc): { type: TypeValue, options: { isArray: boolean, isObject: boolean, arrayDepth: number } } {
+  const options: { isArray: boolean, isObject: boolean, arrayDepth: number } = { isArray: false, isObject: false, arrayDepth: 0 };
+
+  const getType = () => {
+    const typeval = returnTypeFunc();
+
+    if (Array.isArray(typeval)) {
+      const { depth, returnType } = findTypeValueArrayDepth(typeval);
+      options.arrayDepth = depth;
+      options.isArray = true;
+
+      if (isTypeboxType(returnType))
+        return parseTObject(returnType as TObject);
+
+      return returnType;
+    }
+
+    if (isTypeboxType(typeval)) {
+      return parseTObject(typeval as TObject);
+    }
+
+    return typeval;
+  }
+
+  const type = getType();
+  return { type, options };
 }
 
 export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps?: IFieldProps<SubModel>) {
@@ -96,17 +126,30 @@ export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
 
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
-
-    const type = _type ? getType(_type) : Reflect.getMetadata("design:type", target, propertyKey.toString());
-
-    const isObject = type?.name === "Object";
-    const field = {
-      name,
-      isObject,
-      isArray: Array.isArray(type) || type?.name === "Array",
-      type,
-      index: fieldProps?.index,
+    let field: IFieldParams<SubModel>;
+    if (_type) {
+      const { type, options } = findType(_type);
+      field = {
+        name,
+        isArray: options.isArray,
+        isObject: options.isObject,
+        type,
+        typeName: type instanceof Function ? type.name : typeof type === "string" ? type : "Object",
+        index: fieldProps?.index,
+      }
+    } else {
+      const type = Reflect.getMetadata("design:type", target, propertyKey.toString());
+      field = {
+        name,
+        isObject: type?.name === "Object",
+        isArray: Array.isArray(type) || type?.name === "Array",
+        type,
+        typeName: type instanceof Function ? type.name : type,
+        index: fieldProps?.index,
+      }
     }
+
+    console.log(field)
     fields.push(field);
     Reflect.defineMetadata("fields", fields, target.constructor, target.constructor.name);
     Reflect.defineMetadata("field", field, target.constructor, propertyKey.toString());

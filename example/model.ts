@@ -13,9 +13,9 @@ export class Friends extends RelationEdge<User, User>{
 
 @table({ name: "car" })
 export class Car extends Model {
-  @prop() name!: string
-  @prop() color!: string
-  @prop() model!: string
+  @prop(_ => String) name!: string
+  @prop(_ => String) color!: string
+  @prop(_ => String) model!: string
   @prop() owner!: `user:${string}`
 }
 
