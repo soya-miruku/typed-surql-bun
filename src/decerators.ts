@@ -149,7 +149,6 @@ export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
       }
     }
 
-    console.log(field)
     fields.push(field);
     Reflect.defineMetadata("fields", fields, target.constructor, target.constructor.name);
     Reflect.defineMetadata("field", field, target.constructor, propertyKey.toString());
