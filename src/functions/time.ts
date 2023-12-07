@@ -6,7 +6,7 @@ export function day(datetime: Date) {
 }
 
 export function epoch() {
-  return qlFn.create(`time::EPOCH`);
+  return qlFn.create("time::EPOCH");
 }
 
 export function floor(datetime: Date, duration: DurationType) {
@@ -46,7 +46,7 @@ export function nano(datetime: Date) {
 }
 
 export function now() {
-  return qlFn.create(`time::now()`);
+  return qlFn.create("time::now()");
 }
 
 export function round(datetime: Date, duration: DurationType) {
@@ -58,7 +58,7 @@ export function second(datetime: Date) {
 }
 
 export function timezone() {
-  return qlFn.create(`time::timezone()`);
+  return qlFn.create("time::timezone()");
 }
 
 export function unix(num: number) {

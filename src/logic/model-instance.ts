@@ -1,7 +1,7 @@
 import { Surreal } from "surrealdb.js";
 import { Constructor } from "type-fest";
 import { LiveQueryResponse, OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, TransformSelected, CreateInput, ActionResult, AsBasicModel, Patch } from "..";
-import { funcs, ql, SQL, Instance, FnBody } from "../exports";
+import { fx, ql, SQL, Instance, FnBody } from "../exports";
 import { Model, RelationEdge } from "../model";
 import { InfoForTable } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
@@ -25,14 +25,14 @@ export class ModelInstance<SubModel extends Model> {
     const tableIndexes = table?.indexes;
 
     if (tableIndexes) {
-      const columns = tableIndexes.columns.map((column) => funcs.val(column as string));
-      const index = funcs.val(`DEFINE INDEX ${columns.at(0)}_${columns.at(-1)}_${tableIndexes.suffix ?? "idx"} ON TABLE ${tableName} COLUMNS ${columns.join(", ")} ${tableIndexes.unique ? funcs.val("UNIQUE") : ""} ${tableIndexes.search ? "SEARCH ANALYZER ascii BM25 HIGHLIGHTS" : ""};`);
+      const columns = tableIndexes.columns.map((column) => fx.val(column as string));
+      const index = fx.val(`DEFINE INDEX ${columns.at(0)}_${columns.at(-1)}_${tableIndexes.suffix ?? "idx"} ON TABLE ${tableName} COLUMNS ${columns.join(", ")} ${tableIndexes.unique ? fx.val("UNIQUE") : ""} ${tableIndexes.search ? "SEARCH ANALYZER ascii BM25 HIGHLIGHTS" : ""};`);
       queries.push(index.toString());
     }
 
     for (const field of fields) {
       if (field.index && !info.indexes[field.index.name]) {
-        const query = ql`DEFINE INDEX ${funcs.val(field.index.name)} ON TABLE ${funcs.val(tableName)} COLUMNS ${funcs.val(field.name as string)} ${field.index.unique ? funcs.val("UNIQUE") : ""} ${field.index.search ? "SEARCH ANALYZER ascii BM25 HIGHLIGHTS" : ""};`;
+        const query = ql`DEFINE INDEX ${fx.val(field.index.name)} ON TABLE ${fx.val(tableName)} COLUMNS ${fx.val(field.name as string)} ${field.index.unique ? fx.val("UNIQUE") : ""} ${field.index.search ? "SEARCH ANALYZER ascii BM25 HIGHLIGHTS" : ""};`;
         queries.push(query.toString());
       }
     }

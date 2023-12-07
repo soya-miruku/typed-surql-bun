@@ -6,7 +6,7 @@ import { IModel, ModelBase, Constructor, DotNestedKeys } from "./types/types.ts"
 import { ITable } from "./decerators.ts";
 import { IFieldParams } from "./decerators.ts";
 import { AnyAuth, ConnectionOptions, RawQueryResult, Token } from "./types/surreal-types.ts";
-import { FnBody, Instance, SQL, funcs, ql } from "./utils/query.ts";
+import { FnBody, Instance, SQL, fx, ql } from "./utils/query.ts";
 import { operations } from "./functions/operations.ts";
 import { ISurrealScope } from "./scope.ts";
 import { AlgoType, ExtendedTokenAuth, ScopeType, extendedTokenAuth } from "./token.ts";
@@ -146,13 +146,13 @@ class TypedSurQL {
         const toTableName = f.params?.to ? this.getTableName(f.params.to as Constructor<ModelBase>) : undefined;
         const toPath = toTableName ? `${f.params.select}${toTableName}` : f.params.select ? `${f.params.select}` : "";
         const viaPath = `${f.params.dirVia}${viaTableName}`;
-        return funcs.val(`${viaPath}${toPath} as ${f.name as string}`);
+        return fx.val(`${viaPath}${toPath} as ${f.name as string}`);
       }
-      if (typeof k === "string") return funcs.val(k as string);
-      return funcs.val(JSON.stringify(k));
+      if (typeof k === "string") return fx.val(k as string);
+      return fx.val(JSON.stringify(k));
     }
 
-    return Object.assign(baseFn, funcs, operations, { TABLE: funcs.val(this.getTableName(m)), ql: ql, field: baseFn }) as FnBody<Ins>;
+    return Object.assign(baseFn, fx, operations, { TABLE: fx.val(this.getTableName(m)), ql: ql, field: baseFn }) as FnBody<Ins>;
   }
 
   public magic<M extends Constructor<ModelBase>, T, Ins = Instance<M>>(m: M, fn: (q: typeof ql<T>, fn: FnBody<Ins>) => SQL, currentSql = "") {
@@ -178,7 +178,7 @@ class TypedSurQL {
     let query = `DEFINE SCOPE ${name} SESSION ${session}`;
     const fnBody = this.createFnBody<TModel, Ins>(model);
     const parsedProps = Object.entries(props).reduce((acc, [k, v]) => {
-      acc[k] = funcs.val(k);
+      acc[k] = fx.val(k);
       return acc;
     }, {} as any)
 
@@ -193,7 +193,7 @@ class TypedSurQL {
     const response = await this.client.query(query);
     if (response.length === 0) throw new Error("Scope creation failed");
     const propsObj = Object.entries(props).reduce((acc, [k, v]) => {
-      acc[k] = funcs.val(k);
+      acc[k] = fx.val(k);
       return acc;
     }, {} as any);
 
@@ -211,7 +211,7 @@ class TypedSurQL {
     if (response.length === 0) throw new Error("Token creation failed");
     const properties = extendedTokenAuth(additionalProps ?? {});
     const propsObj = Object.entries(Value.Create(properties)).reduce((acc, [k, v]) => {
-      acc[k] = funcs.val(k);
+      acc[k] = fx.val(k);
       return acc;
     }, {} as any);
     return { name, ...propsObj };

@@ -11,6 +11,7 @@ export * from './operations.ts';
 export * from './parse.ts';
 export * from './rand.ts';
 export * from './search.ts';
+export * as type from './type.ts'
 export * as session from './session.ts';
 export * as strings from './strings.ts';
 export * as time from './time.ts';

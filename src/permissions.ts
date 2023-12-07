@@ -1,7 +1,7 @@
 import { Constructor } from "type-fest";
 import { Value } from "@sinclair/typebox/value";
 import { Type, Static, TProperties } from '@sinclair/typebox'
-import { FnBody, Instance, SQL, funcs } from "./utils/query.ts";
+import { FnBody, Instance, SQL, fx } from "./utils/query.ts";
 import { TokenAuthType, defaultTokenAuthProps } from "./token.ts";
 import { IModel } from "./types/types.ts";
 import { qlFn } from "./functions/index.ts";
@@ -44,16 +44,16 @@ export class Permissions<SubModel extends IModel, TokenType extends TokenAuthTyp
 	public for<Ins = Instance<Constructor<SubModel>>>(type: TSurrealPermissionOperation | TSurrealPermissionOperation[], perm: "NONE" | "ALL" | ((fn: FnBody<Ins> & { $token: TokenType, $scope: ScopeName, $auth: AuthType }) => SQL)) {
 		const fnBody = TypedSurQL.createFnBody(this.model);
 		const tokenObj = Object.entries(this.tokenType ?? Value.Create(defaultTokenAuthProps as any)).reduce((acc, [k, v]) => {
-			acc[k] = funcs.val(`$token.${k}`);
+			acc[k] = fx.val(`$token.${k}`);
 			return acc;
 		}, {} as Record<string, qlFn>);
 
 		const authObj = Object.entries(this.auth ?? Value.Create(defaultAuthProps)).reduce((acc, [k, v]) => {
-			acc[k] = funcs.val(`$auth.${k}`);
+			acc[k] = fx.val(`$auth.${k}`);
 			return acc;
 		}, {} as Record<string, qlFn>);
 
-		const extendedFnBody = Object.assign(fnBody, { $token: tokenObj, $scope: funcs.val("$scope" ?? ""), $auth: authObj }) as any;
+		const extendedFnBody = Object.assign(fnBody, { $token: tokenObj, $scope: fx.val("$scope" ?? ""), $auth: authObj }) as any;
 		let condition: string | SQL = "";
 		if (typeof perm === "string") {
 			condition = perm;

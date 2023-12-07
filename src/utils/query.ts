@@ -1,7 +1,7 @@
 import type { Constructor, Simplify } from "type-fest";
 import { qlFn } from "../functions/index.ts";
 import { DotNestedKeys, IModel, OnlyFields } from "../types/types.ts";
-import { alias, arrays, count, cryptos, durations, http, math, meta, operations, parse, rands, search, session, strings, time } from "../functions/mod.ts";
+import { alias, arrays, count, cryptos, durations, http, math, meta, operations, parse, rands, search, session, strings, time, type } from "../functions/mod.ts";
 
 export type StringContains<T extends string, U extends string> = T extends `${string}${U}${string}` ? true : false;
 export type SQLInput<T extends string> = StringContains<T, "'"> extends true ? "USE VARS, INSTEAD OF '" : T;
@@ -25,7 +25,7 @@ export class SQL {
   }
 }
 
-export const funcs = {
+export const fx = {
   VALUE: qlFn.create("VALUE"),
   LIMIT: (limit: number) => qlFn.create(`LIMIT ${limit}`),
   val: (value: string) => qlFn.create(`${value}`),
@@ -42,10 +42,11 @@ export const funcs = {
   search: search,
   time: time,
   meta: meta,
+  type: type,
   ...alias
 }
 
-export type FunContext = typeof funcs;
+export type FunContext = typeof fx;
 export type Operation = typeof operations;
 
 export function ql<T>(strings: TemplateStringsArray, ...values: unknown[]): SQL {
