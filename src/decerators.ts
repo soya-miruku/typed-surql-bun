@@ -34,7 +34,7 @@ export interface IFieldProps<SubModel extends IModel> {
   index?: { name: string, unique?: boolean, search?: boolean }
 }
 
-export function Table<SubModel extends IModel>(props?: ITable<SubModel, keyof SubModel>) {
+export function table<SubModel extends IModel>(props?: ITable<SubModel, keyof SubModel>) {
   return (ctor: Constructor<SubModel>) => {
     Reflect.defineMetadata('table', { name: props?.name ?? ctor.name, indexes: props?.indexes }, ctor);
   }
@@ -112,13 +112,13 @@ export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
   }
 }
 
-export function Idx() {
+export function idx() {
   return <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) => {
     Reflect.defineMetadata("Idx", { name: propertyKey, isArray: false, type: "Id" }, target.constructor);
   }
 }
 
-export function Record<ModelType extends Constructor<IModel>>(recType: ModelType) {
+export function record<ModelType extends Constructor<IModel>>(recType: ModelType) {
   return <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) => {
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
@@ -141,7 +141,7 @@ export function Record<ModelType extends Constructor<IModel>>(recType: ModelType
 }
 
 
-export function Relation<SubModel extends IModel,
+export function relation<SubModel extends IModel,
   DirVia extends "->" | "<-",
   DirTo extends "->" | "<-",
   Via extends StaticModel,

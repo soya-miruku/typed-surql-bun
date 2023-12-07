@@ -2,13 +2,13 @@ import type { Constructor } from "type-fest";
 import type { AsBasicModel, CreateInput, IModel, LengthGreaterThanOne, ModelKeysDot, OnlyFields, TransformSelected, UnionToArray } from "./types/types.ts";
 import { ql, SQL, Instance, FnBody } from "./utils/query.ts";
 import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/surreal-types.ts";
-import { Idx } from "./decerators.ts";
+import { idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
 import { WhereSelector } from "./types/filter.ts";
 
 export class Model implements IModel {
-  @Idx() public id!: string;
+  @idx() public id!: string;
 
   public get tableName() {
     return (Reflect.getMetadata("table", this.constructor)?.name ?? this.constructor.name) as string;
