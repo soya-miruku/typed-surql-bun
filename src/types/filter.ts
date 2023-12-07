@@ -1,6 +1,7 @@
 import * as Types from '../types/opts.types';
 import { IFieldParams } from "../decerators";
 import { OfArray } from "../types";
+import { qlFn } from '../functions';
 
 export interface IFilterable<T> {
   parse(): string;
@@ -21,18 +22,22 @@ export type OfDateOrNumberOperators = {
   lte?: number | Types.SDateTime;
 };
 
+type fnType = ((val: any) => qlFn) | qlFn | ((...args: any[]) => qlFn)
+
 export type OfStringOperators = {
-  eq?: string;
-  contains?: string[] | string;
-  containsAny?: string[] | string;
-  containsAll?: string[] | string;
-  containsNone?: string[] | string;
+  eq?: string | fnType;
+  contains?: string[] | string | fnType;
+  containsAny?: string[] | string | fnType;
+  containsAll?: string[] | string | fnType;
+  containsNone?: string[] | string | fnType;
 };
 
 export type ExtractRelevant<T> = OfArray<T> extends { type: infer U; isPrimitive: infer P }
   ? P extends true
   ? ExtractRelevant<U>
   : WhereSelector<U>
+  : T extends fnType
+  ? OfStringOperators | string
   : T extends Types.SDateTime | number
   ? OfDateOrNumberOperators | ((item: T) => boolean)
   : T extends string

@@ -53,6 +53,7 @@ export function mapBooleanOperator(value: any, key?: string) {
 }
 
 export const mapOperator = (value: any, key?: string) => {
+  if (value instanceof qlFn) return value.toString();
   return mapNumberOrDateOperator(value, key) || mapStringOperator(value, key) || mapBooleanOperator(value, key);
 };
 

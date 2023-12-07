@@ -95,8 +95,8 @@ export class Model implements IModel {
     return await new ModelInstance(this).patch(data);
   }
 
-  public static async delete<SubModel extends Model>(this: { new(): SubModel }, id?: string): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
-    return await new ModelInstance(this).delete(id);
+  public static async delete<SubModel extends Model>(this: { new(): SubModel }, id?: string, where?: WhereSelector<SubModel>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+    return await new ModelInstance(this).delete(id, where);
   }
 
   public static async relate<SubModel extends Model,

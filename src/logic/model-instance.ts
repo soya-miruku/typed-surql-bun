@@ -174,8 +174,12 @@ export class ModelInstance<SubModel extends Model> {
     return await (this.surql.client as Surreal).patch(this.surql.getTableName(this.ctor), data);
   }
 
-  public async delete(id?: string): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
-    const thing = id ? id.includes(":") ? id : `${this.surql.getTableName(this.ctor)}:${id}` : this.surql.getTableName(this.ctor);
+  public async delete(id?: string, where?: WhereSelector<SubModel>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+    const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
+    const condition = where ? new WhereFilter(this.ctor, where).parse() : "";
+    if (condition) {
+      return await this.surql.client.query(`DELETE FROM ${thing} WHERE ${condition}`);
+    }
     return await this.surql.client.delete<AsBasicModel<SubModel>>(thing);
   }
 

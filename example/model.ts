@@ -10,6 +10,14 @@ export class Friends extends Q.RelationEdge<User, User>{
   @Q.Prop() date!: Date
 }
 
+@Q.Table({ name: "car" })
+export class Car extends Q.Model {
+  @Q.Prop() name!: string
+  @Q.Prop() color!: string
+  @Q.Prop() model!: string
+  @Q.Prop() owner!: `user:${string}`
+}
+
 @Q.Table({ name: "user" })
 export class User extends Q.Model {
   @Q.Prop() name!: string

@@ -3,6 +3,7 @@ import { IModel } from "../types";
 import { IFilterable, ParentItem, WhereSelector } from "../types/filter";
 import TypedSurQL from "../client";
 import { Constructor } from "type-fest";
+import { qlFn } from "../functions";
 
 export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubModel>, Parent extends ParentItem | null = null> implements IFilterable<T> {
   constructor(private ctor: Constructor<SubModel>, private obj: T, private previous?: Parent, private nested?: boolean) { }
@@ -25,6 +26,7 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
         }
 
         if (i > 0) result += " AND ";
+
         const opts = mapOperator(value, GetKey());
         if (opts) {
           result += opts;
@@ -32,7 +34,7 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
         }
 
         const field = TypedSurQL.getField(this.ctor, key as keyof SubModel) ?? key //this.selector.fieldSearcher.searchInSchema(this.selector.currentSchema, this.previous?.parent ? `${this.previous.parent}.${key}` : key);
-        // console.log("FIELD", field, key, this.previous, value);
+        console.log("FIELD", field, key, this.previous, value);
         if (field) {
           const parentItem = {
             key,
