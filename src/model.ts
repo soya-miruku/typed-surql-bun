@@ -5,7 +5,7 @@ import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/
 import { Idx } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
-import { WhereSelector } from "./logic/where.ts";
+import { WhereSelector } from "./types/filter.ts";
 
 export class Model implements IModel {
   @Idx() public id!: string;

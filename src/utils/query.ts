@@ -2,8 +2,18 @@ import type { Constructor, Simplify } from "type-fest";
 import { qlFn } from "../functions/index.ts";
 import { DotNestedKeys, IModel, OnlyFields } from "../types/types.ts";
 import { alias, arrays, count, cryptos, durations, http, math, meta, operations, parse, rands, search, session, strings, time } from "../functions/mod.ts";
+
 export type StringContains<T extends string, U extends string> = T extends `${string}${U}${string}` ? true : false;
 export type SQLInput<T extends string> = StringContains<T, "'"> extends true ? "USE VARS, INSTEAD OF '" : T;
+
+export type Instance<SubModel extends Constructor<IModel>> = Simplify<OnlyFields<InstanceType<SubModel>>>
+export interface FnBody<InstanceType> extends FunContext, Operation {
+  (k: DotNestedKeys<InstanceType> | InstanceType | InstanceType[]): qlFn;
+  TABLE: qlFn;
+  ql: typeof ql;
+  field: (k: DotNestedKeys<InstanceType> | InstanceType | InstanceType[]) => qlFn;
+}
+
 export class SQL {
   constructor(protected readonly q: string[]) { }
   static Create(q: [string, string]) {
@@ -13,14 +23,6 @@ export class SQL {
   toString(seperator = "") {
     return this.q.join(seperator);
   }
-}
-
-export type Instance<SubModel extends Constructor<IModel>> = Simplify<OnlyFields<InstanceType<SubModel>>>
-export interface FnBody<InstanceType> extends FunContext, Operation {
-  (k: DotNestedKeys<InstanceType> | InstanceType | InstanceType[]): qlFn;
-  TABLE: qlFn;
-  ql: typeof ql;
-  field: (k: DotNestedKeys<InstanceType> | InstanceType | InstanceType[]) => qlFn;
 }
 
 export const funcs = {
@@ -45,7 +47,6 @@ export const funcs = {
 
 export type FunContext = typeof funcs;
 export type Operation = typeof operations;
-
 
 export function ql<T>(strings: TemplateStringsArray, ...values: unknown[]): SQL {
   let finalQuery = '';

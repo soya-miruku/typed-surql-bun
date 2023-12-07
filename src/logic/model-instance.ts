@@ -7,7 +7,8 @@ import { InfoForTable } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
 import { SubscriptionAsyncIterator } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
-import { WhereFilter, WhereSelector } from "./where.ts";
+import { WhereFilter } from "./where.ts";
+import { WhereSelector } from "../types/filter.ts";
 
 export class ModelInstance<SubModel extends Model> {
   private subscriber!: SubscriptionAsyncIterator<SubModel> | null;;

@@ -4,7 +4,7 @@ import EventEmitter from "events";
 import { Model } from "../model";
 import { SQL, Static } from "../exports";
 import { sleep } from "./helper";
-import { WhereSelector } from "../logic/where";
+import { WhereSelector } from "../types/filter";
 
 export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncIterator<LiveQueryResponse<Static<SubModel>> | undefined> {
   private readonly emitter;

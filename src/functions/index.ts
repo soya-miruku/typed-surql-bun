@@ -19,12 +19,11 @@ export class qlFn {
 export function parseType(value: any) {
   if (value instanceof qlFn) {
     return value.fn
-  }
-  else if (typeof value === "string") {
+  } 
+  if (typeof value === "string") {
     return `"${value}"`;
-  } else {
-    return JSON.stringify(value);
   }
+  return JSON.stringify(value);
 }
 
 export type Input = string | qlFn
