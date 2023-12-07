@@ -10,6 +10,7 @@ import { FnBody, Instance, SQL, fx, ql } from "./utils/query.ts";
 import { operations } from "./functions/operations.ts";
 import { ISurrealScope } from "./scope.ts";
 import { AlgoType, ExtendedTokenAuth, ScopeType, extendedTokenAuth } from "./token.ts";
+import { getField, getFields, getTable, getTableName } from "./utils/reflect.ts";
 
 export type StrategyType = "HTTP" | "WS";
 export type SurrealClient = AsyncReturnType<InstanceType<Constructor<TypedSurQL>>['init']>;
@@ -21,23 +22,19 @@ class TypedSurQL {
   public url!: string;
 
   public getTableName<SubModel extends IModel>(ctor: Class<SubModel>): string {
-    return Reflect.getMetadata("table", ctor)?.name ?? ctor.name;
+    return getTableName(ctor);
   }
 
   public getTable<SubModel extends IModel>(ctor: Class<SubModel>): ITable<SubModel> | undefined {
-    const res = Reflect.getMetadata("table", ctor);
-    return res ? res as ITable<SubModel> : undefined
+    return getTable(ctor);
   }
 
   public getFields<SubModel extends IModel>(ctor: Class<SubModel>): IFieldParams<SubModel>[] {
-    const fields = Reflect.getMetadata("fields", ctor, ctor.name) as IFieldParams<SubModel>[];
-    const id = Reflect.getMetadata("Idx", ctor) as IFieldParams<SubModel>;
-    return id ? fields.concat(id) : fields;
+    return getFields(ctor);
   }
 
   public getField<SubModel extends IModel>(ctor: Class<SubModel>, name: keyof SubModel): IFieldParams<SubModel> {
-    if (name === "id") return Reflect.getMetadata("Idx", ctor) as IFieldParams<SubModel>;
-    return Reflect.getMetadata("field", ctor, name.toString()) as IFieldParams<SubModel>;
+    return getField(ctor, name);
   }
 
   public isModelType(value: any): value is IModel {

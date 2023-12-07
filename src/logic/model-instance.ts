@@ -116,6 +116,7 @@ export class ModelInstance<SubModel extends Model> {
       else
         where = new WhereFilter(this.ctor, options?.where).parse();
     }
+    console.log(where);
     const from = options?.id ? options?.id.includes(":") ? `${tableName}:${options?.id.split(":")[1]}` : `${tableName}:${options?.id}` : tableName;
     const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""}`;
     options?.logQuery && console.log(query);

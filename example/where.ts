@@ -1,14 +1,31 @@
-import { WhereFilter } from "../src/logic/where";
-import { User } from "./model";
+import { Friends, User } from "./model";
+import TypedSurQL from '../src/client';
+import { fx } from "../src/exports";
 
-const query = new WhereFilter(User, {
-  name: "henry",
-  todos: {
-    completed: true
+await TypedSurQL.init("http://127.0.0.1:8000", {
+  auth: {
+    username: "root",
+    password: "root"
   },
-  friends: {
-    name: "bingo"
-  },
-});
+  websocket: true,
+  namespace: "test",
+  database: "test"
+})
 
-console.log(query.parse())
+const user1 = (await User.create({
+  name: "test",
+  todos: [{ title: "test", completed: false }],
+  email: "email@email.com",
+  password: "password"
+}))[0];
+
+const user2 = (await User.create({
+  name: "test",
+  todos: [{ title: "test", completed: false }],
+  email: "email@email.com",
+  password: "password"
+}))[0];
+
+const related = await User.relate(user1.id, Friends, [User, user2.id])
+
+console.log(await User.select("*", { where: { id: fx.meta.thing(User, "nv0528j7qg25i6nr1gim").fn } }))
