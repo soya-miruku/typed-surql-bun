@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Kind, Optional, TObject, TProperties, TRecord, Type } from "@sinclair/typebox";
+import { Kind, Optional, TObject, TProperties, TRecord } from "@sinclair/typebox";
 import type { OnlyFields, StaticModel, Constructor, IModel, DotNestedKeys, FunctionType } from "./types/types.ts";
 import type { Class } from "type-fest";
 
@@ -23,7 +23,7 @@ export type ObjType = Record<string, { type: ObjType, required: boolean, name: s
 
 export type IFieldParams<SubModel extends IModel> = {
   name: keyof SubModel;
-  type: string | ObjType;
+  type?: string | ObjType;
   isArray: boolean;
   isObject: boolean;
   index?: { name: string, unique?: boolean, search?: boolean };
@@ -87,7 +87,7 @@ function getType(returnTypeFunc: ReturnTypeFunc): TypeValue {
   return typeItem;
 }
 
-export function Prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps?: IFieldProps<SubModel>) {
+export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps?: IFieldProps<SubModel>) {
   return (target: SubModel, propertyKey: keyof SubModel) => {
     if (typeof propertyKey === "symbol") {
       throw new Error("Symbol properties are not supported");
@@ -96,8 +96,7 @@ export function Prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
 
-    let type = _type ? getType(_type) : Reflect.getMetadata("design:type", target, propertyKey.toString());
-    type = type ?? { name: "unknown" }
+    const type = _type ? getType(_type) : Reflect.getMetadata("design:type", target, propertyKey.toString());
 
     const isObject = type.name === "Object";
     const field = {

@@ -130,6 +130,7 @@ export type LengthGreaterThanOne<T extends unknown[]> = T extends [unknown, unkn
 export type ConditionalPickDeep<
   Type,
   Condition,
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   Options extends ConditionalPickDeepOptions = {},
 > = ConditionalSimplifyDeep<ConditionalExcept<{
   [Key in keyof Type]: AssertCondition<Type[Key], Condition, Options> extends true

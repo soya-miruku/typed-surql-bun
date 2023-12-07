@@ -34,7 +34,6 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
         }
 
         const field = TypedSurQL.getField(this.ctor, key as keyof SubModel) ?? key //this.selector.fieldSearcher.searchInSchema(this.selector.currentSchema, this.previous?.parent ? `${this.previous.parent}.${key}` : key);
-        console.log("FIELD", field, key, this.previous, value);
         if (field) {
           const parentItem = {
             key,
@@ -42,9 +41,9 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
             fieldItem: field,
           } as ParentItem;
 
-          const IsArray = field.isArray || Array.isArray(field.type);
-          const isObject = field.isObject || typeof field.type === "object";
-          const isRelation = field.type === "Relation";
+          const IsArray = field.isArray || Array.isArray(field?.type);
+          const isObject = field.isObject || typeof field?.type === "object";
+          const isRelation = field?.type === "Relation";
           const isPrimitive = !(IsArray || isObject);
 
           if (isRelation) {
