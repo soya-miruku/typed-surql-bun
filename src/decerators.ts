@@ -81,6 +81,7 @@ export function getTypeDecoratorParams<T extends object>(returnTypeFuncOrOptions
 function getType(returnTypeFunc: ReturnTypeFunc): TypeValue {
   const typeval = returnTypeFunc();
   let typeItem = Array.isArray(typeval) ? typeval[0] : typeval;
+  console.log(typeItem, 'typeItem')
   if (!(typeof typeItem === "function" && typeItem.prototype !== undefined && typeItem.prototype.constructor !== undefined)) {
     typeItem = parseTObject(typeItem);
   }
