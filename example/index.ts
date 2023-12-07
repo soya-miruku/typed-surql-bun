@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Q } from '../src/index.ts';
+import { ql } from '../src/index.ts';
 import TypedSurQL from '../src/client.ts';
 import { Friends, User } from "./model.ts";
 
@@ -27,7 +27,7 @@ const r_rel = await User.relate(henry.at(0)!.id, Friends, [User, bingo.at(0)!.id
 })
 
 console.log(await User.query((q, f) => q`SELECT * FROM $token`).exec())
-const result = await User.select(["todos", "friends", "bestFriend", "friendsMeta"], { fetch: ["friends", "bestFriend", "friendsMeta"], where: Q.ql`name = "henry"`, logQuery: true });
+const result = await User.select(["todos", "friends", "bestFriend", "friendsMeta"], { fetch: ["friends", "bestFriend", "friendsMeta"], where: ql`name = "henry"`, logQuery: true });
 console.log(result)
 
 /** RETURNS (AS AN EXAMPLE)

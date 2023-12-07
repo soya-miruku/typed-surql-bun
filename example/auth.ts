@@ -1,11 +1,11 @@
 import TypedSurQL from '../src/client.ts';
-import { Q } from '../src/index.ts';
+import { Type } from '../src/exports.ts';
 import { Permissions } from '../src/permissions.ts';
 import { User } from './model.ts';
 
 const SECRET = "eyJhbGciOiJIUzUxMiJ9.uMQdGd-";
 
-const UsersScope = await TypedSurQL.createScope(User, { $email: Q.Type.String(), $password: Q.Type.String() }, {
+const UsersScope = await TypedSurQL.createScope(User, { $email: Type.String(), $password: Type.String() }, {
   name: "users",
   session: "7d",
   signin: ({ ql, fn: { TABLE, crypto, field }, $email, $password }) => {
@@ -16,7 +16,7 @@ const UsersScope = await TypedSurQL.createScope(User, { $email: Q.Type.String(),
   }
 });
 
-const AuthToken = await TypedSurQL.createToken({ name: "auth_token", on: UsersScope, type: "HS512" }, SECRET, { userId: Q.Type.String() })
+const AuthToken = await TypedSurQL.createToken({ name: "auth_token", on: UsersScope, type: "HS512" }, SECRET, { userId: Type.String() })
 Permissions.Of(User, { scope: UsersScope, token: AuthToken })
   .for("SELECT", ({ field, ql, $token, $scope }) => ql`${$scope} === "users" AND ${field("id")} = ${$token.id}`)
   .for("UPDATE", "NONE")

@@ -98,11 +98,11 @@ export function prop<SubModel extends IModel>(_type?: ReturnTypeFunc, fieldProps
 
     const type = _type ? getType(_type) : Reflect.getMetadata("design:type", target, propertyKey.toString());
 
-    const isObject = type.name === "Object";
+    const isObject = type?.name === "Object";
     const field = {
       name,
       isObject,
-      isArray: Array.isArray(type) || type.name === "Array",
+      isArray: Array.isArray(type) || type?.name === "Array",
       type,
       index: fieldProps?.index,
     }
@@ -122,10 +122,9 @@ export function record<ModelType extends Constructor<IModel>>(recType: ModelType
   return <SubModel extends IModel>(target: SubModel, propertyKey: keyof SubModel) => {
     const name = propertyKey;
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
-    let type = Reflect.getMetadata("design:type", target, propertyKey.toString());
-    type = type ?? { name: "unknown" }
-    const isArray = type.name === "Array";
-    const isObject = type.name === "Object";
+    const type = Reflect.getMetadata("design:type", target, propertyKey.toString());
+    const isArray = type?.name === "Array";
+    const isObject = type?.name === "Object";
     const field = {
       name,
       isArray,
