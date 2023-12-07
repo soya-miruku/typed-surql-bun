@@ -17,7 +17,7 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
       const keys = Object.keys(rest);
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        const value = rest[key as keyof typeof rest];
+        let value = rest[key as keyof typeof rest];
         if (value === undefined) continue;
         if (!key) continue;
 
@@ -26,6 +26,9 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
         }
 
         if (i > 0) result += " AND ";
+
+        if (value instanceof qlFn)
+          value = value.fn;
 
         const opts = mapOperator(value, GetKey());
         if (opts) {

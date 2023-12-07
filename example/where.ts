@@ -47,4 +47,4 @@ const cars = await Car.insert([{
 const related = await User.relate(user1.id, Friends, [User, user2.id])
 
 console.log(await User.select("*", { where: { email: "email@email.com" } }))
-console.log(await Car.select("*", { where: { owner: fx.meta.thing(User, cars[0].owner.split(":")[1]) } }))
+console.log(await Car.select("*", { where: { owner: fx.meta.thing(User, cars[0].owner.split(":")[1]) }, logQuery: true }))
