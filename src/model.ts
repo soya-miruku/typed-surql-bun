@@ -60,7 +60,12 @@ export class Model implements IModel {
     return await new ModelInstance(this).kill(uuid);
   }
 
-  public static async select<SubModel extends Model, Key extends keyof OnlyFields<SubModel>, Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never, WithValue extends boolean | undefined = undefined>(
+  public static async select<SubModel extends Model,
+    Key extends keyof OnlyFields<SubModel>,
+    Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
+    WithValue extends boolean | undefined = undefined,
+    IgnoreRelations extends boolean | undefined = undefined
+  >(
     this: { new(props?: Partial<SubModel>): SubModel },
     keys: Key[] | "*",
     options?: {
@@ -68,9 +73,14 @@ export class Model implements IModel {
       id?: string,
       value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
       where?: SQL | WhereSelector<SubModel>,
+      limit?: number,
+      start?: number,
+      orderBy?: keyof OnlyFields<SubModel>,
+      order?: "ASC" | "DESC",
+      ignoreRelations?: IgnoreRelations,
       logQuery?: boolean
     }
-  ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue>[]> {
+  ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[]> {
     return await new ModelInstance(this).select(keys, options);
   }
 

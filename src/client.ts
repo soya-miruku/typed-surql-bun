@@ -37,6 +37,11 @@ class TypedSurQL {
     return getField(ctor, name);
   }
 
+  public getModelFromField<SubModel extends IModel>(ctor: Class<SubModel>, name: keyof SubModel): Constructor<IModel> | undefined {
+    const field = this.getField(ctor, name);
+    return field.type === "Relation" ? field.params?.via : field.type as Class<IModel> | undefined;
+  }
+
   public isModelType(value: any): value is IModel {
     return value instanceof ModelBase || value instanceof Object && "id" in value;
   }

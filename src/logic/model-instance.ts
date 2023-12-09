@@ -78,16 +78,25 @@ export class ModelInstance<SubModel extends Model> {
     }
   }
 
-  public async select<Key extends keyof OnlyFields<SubModel>, Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never, WithValue extends boolean | undefined = undefined>(
+  public async select<Key extends keyof OnlyFields<SubModel>,
+    Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
+    WithValue extends boolean | undefined = undefined,
+    IgnoreRelations extends boolean | undefined = undefined
+  >(
     keys: Key[] | "*",
     options?: {
       fetch?: Fetch[],
       id?: string,
       value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
       where?: SQL | WhereSelector<SubModel>,
+      limit?: number,
+      start?: number,
+      orderBy?: keyof OnlyFields<SubModel>,
+      order?: "ASC" | "DESC",
+      ignoreRelations?: IgnoreRelations,
       logQuery?: boolean
     }
-  ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue>[]> {
+  ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[]> {
     const tableName = this.surql.getTableName(this.ctor);
     const fields = keys === "*" ? this.surql.getFields(this.ctor)
       : keys.map((key) => {
@@ -99,7 +108,7 @@ export class ModelInstance<SubModel extends Model> {
     const selections = fields.map((field) => {
       const specifier = field.name.toString().includes(":") ? field.name.toString().split(":") : undefined;
       const [name, id] = specifier ? specifier : [field.name, undefined];
-      if (field.type === "Relation" && field.params) {
+      if (field.type === "Relation" && field.params && !options?.ignoreRelations) {
         const viaTableName = this.surql.getTableName(field.params.via as Constructor<Model>);
         const toTableName = field.params?.to ? this.surql.getTableName(field.params.to as Constructor<Model>) : undefined;
         const toPath = toTableName ? `${field.params.select}${toTableName}` : field.params.select ? `${field.params.select}` : "";
@@ -116,10 +125,31 @@ export class ModelInstance<SubModel extends Model> {
       else
         where = new WhereFilter(this.ctor, options?.where).parse();
     }
+
     const from = options?.id ? options?.id.includes(":") ? `${tableName}:${options?.id.split(":")[1]}` : `${tableName}:${options?.id}` : tableName;
-    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""}`;
+    const orderBy = options?.orderBy ? ` ORDER BY ${this.surql.getField(this.ctor, options.orderBy).name.toString()} ${options?.order ?? "ASC"}` : "";
+    const limit = options?.limit ? ` LIMIT ${options?.limit}` : "";
+    const start = options?.start ? ` START ${options?.start}` : "";
+    const fetches = options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""
+
+    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${orderBy}${limit}${start}${fetches}`;
     options?.logQuery && console.log(query);
-    return (await this.surql.client.query(query)).at(-1) as TransformSelected<SubModel, Key, Fetch, WithValue>[];
+    const results = (await this.surql.client.query(query)).at(-1) as TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[];
+
+    if (options?.ignoreRelations) {
+      // return with relations removed
+      return results.map((result) => {
+        const newResult = { ...result };
+        for (const field of fields) {
+          if (field.type === "Relation") {
+            delete newResult[field.name as keyof typeof newResult];
+          }
+        }
+        return newResult;
+      })
+    }
+
+    return results;
   }
 
   public async create(props: CreateInput<SubModel>) {

@@ -172,7 +172,7 @@ export function record<ModelType extends Constructor<IModel>>(recType: ModelType
       name,
       isArray,
       isObject,
-      type: `Record:${recType.name}`,
+      type: recType,
     }
 
     fields.push(field);

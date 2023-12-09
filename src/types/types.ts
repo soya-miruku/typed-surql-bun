@@ -171,13 +171,16 @@ export type IsModel<T> = T extends IModel ? T : T extends RecordLink<string> ? T
 export type OnlyModelsFields<T extends IModel, Basic = OnlyFields<T>> = ConditionalPick<Basic, IModel | IModel[] | RecordLink<string> | RecordLink<string>[]>;
 export type ModelKeysDot<SubModel extends IModel> = DotNestedKeys<ConditionalPickDeep<Required<OnlyFields<SubModel>>, IModel | IModel[] | `${string}:${string}` | `${string}:${string}`[]>>
 export type OnlyFields<T> = Simplify<{ [K in keyof T as K extends "table" | "fields" | "field" | "tableName" ? never : T[K] extends FunctionType ? never : K]: T[K]; }>;
+
 export type TransformSelected<SubModel extends IModel,
   Key extends keyof Basic,
   FetchKeys,
   WithValue extends boolean | undefined = undefined,
+  IgnoreRelations extends boolean | undefined = undefined,
   Basic = OnlyFields<SubModel>,
-  A = Pick<AsBasicModel<Basic>, Key>,
-  B = Pick<Basic, FetchKeys & keyof Basic>,
+  R = ReadonlyKeysOf<Basic>,
+  A = Pick<AsBasicModel<Basic>, IgnoreRelations extends true ? Exclude<Key, R> : Key>,
+  B = Pick<Basic, (IgnoreRelations extends true ? Exclude<FetchKeys, R> : FetchKeys) & keyof Basic>,
 > = WithValue extends true ? Merge<A, B>[keyof Merge<A, B>] : Merge<A, B>
 
 export type AsBasicModel<T> = {
