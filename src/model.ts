@@ -121,6 +121,6 @@ export class Model implements IModel {
 }
 
 export class RelationEdge<In extends IModel, Out extends IModel> extends Model {
-  public in!: In | string;
-  public out!: Out | string;
+  public in!: In;
+  public out!: Out;
 }

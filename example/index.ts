@@ -25,3 +25,5 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
 //   date: new Date()
 // })
 
+await User.select("*", { ignoreRelations: true });
+await Friends.select("*", { fetch: ["in"] });
