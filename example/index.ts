@@ -25,5 +25,6 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
 //   date: new Date()
 // })
 
-await User.select("*", { ignoreRelations: true });
-await Friends.select("*", { fetch: ["in"] });
+// await User.select("*", { ignoreRelations: true });
+const r = await Friends.select("*", { fetch: ["in", "out"], logQuery: true });
+console.log(r)

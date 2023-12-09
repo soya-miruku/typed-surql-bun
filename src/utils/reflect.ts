@@ -12,9 +12,20 @@ export function getTable<SubModel extends IModel>(ctor: Class<SubModel>): ITable
 }
 
 export function getFields<SubModel extends IModel>(ctor: Class<SubModel>): IFieldParams<SubModel>[] {
-  const fields = Reflect.getMetadata("fields", ctor, ctor.name) as IFieldParams<SubModel>[];
-  const id = Reflect.getMetadata("Idx", ctor) as IFieldParams<SubModel>;
-  return id ? fields.concat(id) : fields;
+  const parentCtor = Object.getPrototypeOf(ctor);
+  const fields: IFieldParams<SubModel>[] = [];
+  if (parentCtor.name.includes("RelationEdge")) {
+    fields.push(...getFields(parentCtor) as IFieldParams<SubModel>[]);
+  }
+
+  const fieldsForModel = Reflect.getMetadata("fields", ctor, ctor.name) as IFieldParams<SubModel>[];
+  if (fieldsForModel) fields.push(...fieldsForModel);
+  if (fields.filter(f => f.name === "id").length <= 0) {
+    const id = Reflect.getMetadata("Idx", ctor) as IFieldParams<SubModel>;
+    if (id) fields.push(id);
+  }
+
+  return fields;
 }
 
 export function getField<SubModel extends IModel>(ctor: Class<SubModel>, name: keyof SubModel): IFieldParams<SubModel> {
