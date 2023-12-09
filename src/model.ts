@@ -44,7 +44,7 @@ export class Model implements IModel {
     return await new ModelInstance(this).info();
   }
 
-  public static async live<SubModel extends Model>(this: { new(): SubModel }, callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, filter?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
+  public static async live<SubModel extends Model>(this: { new(): SubModel }, callback?: (data: LiveQueryResponse<AsBasicModel<SubModel>>) => unknown, filter?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
     return await new ModelInstance(this).live(callback, filter, diff);
   }
 

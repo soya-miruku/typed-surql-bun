@@ -1,7 +1,7 @@
 {
 	"name": "@soyamiruku/typed-surql-bun",
 	"description": "SurrealDB Extra",
-	"version": "1.8.1",
+	"version": "1.8.3",
 	"module": "src/index.ts",
 	"type": "module",
 	"repository": {

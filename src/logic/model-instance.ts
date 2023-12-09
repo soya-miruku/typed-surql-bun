@@ -49,7 +49,7 @@ export class ModelInstance<SubModel extends Model> {
     return await this.surql.client.kill(uuid);
   }
 
-  public async live(callback?: (data: LiveQueryResponse<OnlyFields<SubModel>>) => unknown, condition?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
+  public async live(callback?: (data: LiveQueryResponse<AsBasicModel<SubModel>>) => unknown, condition?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
     if (this.surql.STRATEGY === "HTTP") throw new Error("Live queries are not supported in HTTP mode");
 
     let where = "";

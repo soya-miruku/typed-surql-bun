@@ -28,3 +28,7 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
 // await User.select("*", { ignoreRelations: true });
 const r = await Friends.select("*", { fetch: ["in", "out"], logQuery: true });
 console.log(r)
+
+await Friends.live((data) => {
+  console.log(data.result?.in)
+}) 
