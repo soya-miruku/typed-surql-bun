@@ -2,17 +2,24 @@ import { Constructor } from "type-fest";
 import { LiveQueryResponse } from "../types/surreal-types";
 import EventEmitter from "events";
 import { Model } from "../model";
-import { SQL, Static } from "../exports";
+import { Static } from "../exports";
 import { sleep } from "./helper";
-import { WhereSelector } from "../types/filter";
+import { FunctionType, KeyofRecs, ModelKeysDot, TransformFetches } from "../types";
+import { LiveOptions } from "../types/model-types";
 
-export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncIterator<LiveQueryResponse<Static<SubModel>> | undefined> {
+export type ExtractModelClass<T extends Model> = T extends Constructor<Model> ? T : never;
+
+export class SubscriptionAsyncIterator<SubModel extends Model,
+  Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>,
+  ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>,
+  ResultType = LiveQueryResponse<TransformFetches<SubModel, Fetch>>
+> implements AsyncIterator<ResultType | undefined> {
   private readonly emitter;
   public isSubscribed = false;
-  private current: LiveQueryResponse<Static<SubModel>> | undefined;
+  private current: ResultType | undefined;
   private uuid: string | undefined;
   private initilised = false;
-  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: { action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean }) {
+  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: { action?: LiveQueryResponse['action'] | "ALL" } & LiveOptions<SubModel, ModelKeys, Fetch>) {
     this.emitter = new EventEmitter();
   }
 
@@ -22,13 +29,13 @@ export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncI
     });
   }
 
-  public async next(): Promise<IteratorResult<LiveQueryResponse<Static<SubModel>> | undefined, any>> {
+  public async next(): Promise<IteratorResult<ResultType | undefined, any>> {
     if (!this.isSubscribed && this.initilised) return { value: undefined, done: true };
     await this.waitForData();
     return { value: this.current, done: false };
   }
 
-  public async return(): Promise<IteratorResult<LiveQueryResponse<Static<SubModel>>, any>> {
+  public async return(): Promise<IteratorResult<ResultType, any>> {
     console.log(`Unsubscribed from ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`);
     if (this.uuid)
       await (this.model as unknown as typeof Model).kill(this.uuid);
@@ -36,18 +43,19 @@ export class SubscriptionAsyncIterator<SubModel extends Model> implements AsyncI
     return { value: undefined, done: true };
   }
 
-  public throw(e: Error): Promise<IteratorResult<LiveQueryResponse<Static<SubModel>>, any>> {
+  public throw(e: Error): Promise<IteratorResult<ResultType, any>> {
     console.error(e);
     this.return();
     return Promise.resolve({ value: undefined, done: true });
   }
 
   public [Symbol.asyncIterator]() {
-    (this.model as unknown as typeof Model).live((data) => {
+    // @ts-ignore
+    (this.model as unknown as typeof Model).live<SubModel, Fetch, ModelKeys>((data) => {
       if ((this._opts?.action && this._opts.action !== "ALL") && data.action !== this._opts.action) return;
-      this.current = data as LiveQueryResponse<Static<SubModel>>;
+      this.current = data as ResultType;
       this.emitter.emit('dataAvailable');
-    }, this._opts?.filter, this._opts?.diff).then((uuid) => {
+    }, this?._opts).then((uuid) => {
       this.uuid = uuid;
       this.isSubscribed = true;
       this.initilised = true;

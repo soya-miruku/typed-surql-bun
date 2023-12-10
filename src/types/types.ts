@@ -168,9 +168,16 @@ export type RecordLink<Name extends string> = `${Name}:${string}`
 
 export type StaticModel = Constructor<IModel>;
 export type IsModel<T> = T extends IModel ? T : T extends RecordLink<string> ? T : never;
-export type OnlyModelsFields<T extends IModel, Basic = OnlyFields<T>> = ConditionalPick<Basic, IModel | IModel[] | RecordLink<string> | RecordLink<string>[]>;
+export type RecFields<T extends IModel, Basic = OnlyFields<T>> = ConditionalPick<Basic, IModel | IModel[] | RecordLink<string> | RecordLink<string>[]>;
+export type KeyofRecs<T extends IModel> = keyof RecFields<T>;
 export type ModelKeysDot<SubModel extends IModel> = DotNestedKeys<ConditionalPickDeep<Required<OnlyFields<SubModel>>, IModel | IModel[] | `${string}:${string}` | `${string}:${string}`[]>>
 export type OnlyFields<T> = Simplify<{ [K in keyof T as K extends "table" | "fields" | "field" | "tableName" ? never : T[K] extends FunctionType ? never : K]: T[K]; }>;
+
+export type TransformFetches<SubModel extends IModel,
+  FetchedKeys,
+  Basic = OnlyFields<SubModel>,
+  A = AsBasicModel<Basic>,
+  B = Pick<Basic, FetchedKeys & keyof Basic>> = Merge<A, B>
 
 export type TransformSelected<SubModel extends IModel,
   Key extends keyof Basic,

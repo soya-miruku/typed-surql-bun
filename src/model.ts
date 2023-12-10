@@ -1,11 +1,12 @@
 import type { Constructor } from "type-fest";
-import type { AsBasicModel, CreateInput, IModel, LengthGreaterThanOne, ModelKeysDot, OnlyFields, TransformSelected, UnionToArray } from "./types/types.ts";
+import type { AsBasicModel, CreateInput, IModel, KeyofRecs, LengthGreaterThanOne, ModelKeysDot, OnlyFields, RecFields, TransformFetches, TransformSelected, UnionToArray } from "./types/types.ts";
 import { ql, SQL, Instance, FnBody } from "./utils/query.ts";
 import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/surreal-types.ts";
 import { idx, prop } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
 import { WhereSelector } from "./types/filter.ts";
+import { LiveOptions, SelectOptions } from "./types/model-types.ts";
 
 export class Model implements IModel {
   @idx() public id!: string;
@@ -44,12 +45,13 @@ export class Model implements IModel {
     return await new ModelInstance(this).info();
   }
 
-  public static async live<SubModel extends Model>(this: { new(): SubModel }, callback?: (data: LiveQueryResponse<AsBasicModel<SubModel>>) => unknown, filter?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
-    return await new ModelInstance(this).live(callback, filter, diff);
+  public static async live<SubModel extends Model, Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(this: { new(): SubModel },
+    callback?: (data: LiveQueryResponse<TransformFetches<SubModel, Fetch>>) => unknown, opts?: LiveOptions<SubModel, ModelKeys, Fetch>): Promise<string> {
+    return await new ModelInstance(this).live(callback, opts);
   }
 
-  public static $subscribe<SubModel extends Model>(this: { new(): SubModel }, action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean) {
-    return new ModelInstance(this).subscribe(action, filter, diff);
+  public static $subscribe<SubModel extends Model, Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(this: { new(): SubModel }, action?: LiveQueryResponse['action'] | "ALL", opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
+    return new ModelInstance(this).subscribe(action, opts);
   }
 
   public static $unsubscribe<SubModel extends Model>(this: { new(): SubModel }) {
@@ -68,18 +70,7 @@ export class Model implements IModel {
   >(
     this: { new(props?: Partial<SubModel>): SubModel },
     keys: Key[] | "*",
-    options?: {
-      fetch?: Fetch[],
-      id?: string,
-      value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
-      where?: SQL | WhereSelector<SubModel>,
-      limit?: number,
-      start?: number,
-      orderBy?: keyof OnlyFields<SubModel>,
-      order?: "ASC" | "DESC",
-      ignoreRelations?: IgnoreRelations,
-      logQuery?: boolean
-    }
+    options?: SelectOptions<SubModel, Key, Fetch, WithValue, IgnoreRelations>
   ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[]> {
     return await new ModelInstance(this).select(keys, options);
   }

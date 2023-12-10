@@ -1,9 +1,9 @@
 import { Surreal } from "surrealdb.js";
 import { Constructor } from "type-fest";
-import { LiveQueryResponse, OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, TransformSelected, CreateInput, ActionResult, AsBasicModel, Patch } from "..";
+import { LiveQueryResponse, OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, TransformSelected, CreateInput, ActionResult, AsBasicModel, Patch, RecFields, TransformFetches, KeyofRecs } from "..";
 import { fx, ql, SQL, Instance, FnBody } from "../exports";
 import { Model, RelationEdge } from "../model";
-import { InfoForTable } from "../types/model-types";
+import { InfoForTable, LiveOptions } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
 import { SubscriptionAsyncIterator } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
@@ -11,7 +11,10 @@ import { WhereFilter } from "./where.ts";
 import { WhereSelector } from "../types/filter.ts";
 
 export class ModelInstance<SubModel extends Model> {
-  private subscriber!: SubscriptionAsyncIterator<SubModel> | null;;
+  private activeSubscriptions: {
+    isSubscribed: boolean,
+    kill: () => Promise<void>,
+  } | null = null
   constructor(private readonly ctor: Constructor<SubModel>, private readonly surql = TypedSurQL) { }
 
   public async migrate() {
@@ -49,35 +52,54 @@ export class ModelInstance<SubModel extends Model> {
     return await this.surql.client.kill(uuid);
   }
 
-  public async live(callback?: (data: LiveQueryResponse<AsBasicModel<SubModel>>) => unknown, condition?: SQL | WhereSelector<SubModel>, diff?: boolean): Promise<string> {
+  /**
+   * 
+   * @param callback   public static async live<SubModel extends Model,
+    Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>,
+    ModelKeys extends keyof OnlyModelsFields<SubModel> = keyof OnlyModelsFields<SubModel>>(this: { new(): SubModel },
+      callback?: (data: LiveQueryResponse<TransformFetches<SubModel, Fetch>>) => unknown, opts?: LiveOptions<SubModel, ModelKeys, Fetch>): Promise<string> {
+    return await new ModelInstance(this).live(callback, opts);
+  }
+
+   * @param condition 
+   * @param diff 
+   * @returns 
+   */
+  public async live<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(callback?: (data: LiveQueryResponse<TransformFetches<SubModel, Fetch>>) => unknown, opts?: LiveOptions<SubModel, ModelKeys, Fetch>): Promise<string> {
     if (this.surql.STRATEGY === "HTTP") throw new Error("Live queries are not supported in HTTP mode");
 
     let where = "";
-    if (condition) {
-      if (condition instanceof SQL)
-        where = condition.toString();
+    if (opts?.where) {
+      if (opts.where instanceof SQL)
+        where = opts.where.toString();
       else
-        where = new WhereFilter(this.ctor, condition).parse();
+        where = new WhereFilter(this.ctor, opts.where).parse();
     }
 
-    const query = `LIVE SELECT ${diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where}` : ""}`;
+    const query = `LIVE SELECT ${opts?.diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where}` : ""}${opts?.fetch && opts.fetch.length > 0 ? ` FETCH ${opts.fetch.join(", ")}` : ""}`;
     const response = await this.surql.client.query(query);
     if (response.length <= 0 || !response[0]) throw new Error("Live query failed to start");
     if (callback) this.surql.client.listenLive(response[0] as string, callback);
     return response[0] as string;
   }
 
-  public subscribe(action?: LiveQueryResponse['action'] | "ALL", filter?: SQL | WhereSelector<SubModel>, diff?: boolean) {
-    return new SubscriptionAsyncIterator(this.ctor, { action, filter, diff });
+  public subscribe<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(action?: LiveQueryResponse['action'] | "ALL", opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
+    const subsriber = new SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys>(this.ctor, { action, ...opts });
+    this.activeSubscriptions = {
+      isSubscribed: subsriber.isSubscribed,
+      kill: async () => {
+        await subsriber.return();
+      }
+    }
+    return subsriber;
   }
 
   public unsubscribe() {
-    if (this.subscriber?.isSubscribed) {
-      this.subscriber.return();
-      this.subscriber = null;
+    if (this.activeSubscriptions?.isSubscribed) {
+      this.activeSubscriptions.kill();
+      this.activeSubscriptions = null;
     }
   }
-
   public async select<Key extends keyof OnlyFields<SubModel>,
     Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
     WithValue extends boolean | undefined = undefined,
