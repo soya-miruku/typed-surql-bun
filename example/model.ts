@@ -9,6 +9,7 @@ export const Todo = Type.Object({
 @table({ name: "friends" })
 export class Friends extends RelationEdge<User, User>{
   @prop() date!: Date
+  @prop() type!: "friend" | "family"
 }
 
 @table({ name: "car" })

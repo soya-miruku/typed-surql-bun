@@ -32,6 +32,7 @@ export type IFieldParams<SubModel extends IModel> = {
   typeName?: string;
   isArray: boolean;
   isObject: boolean;
+  isRecord?: boolean;
   index?: { name: string, unique?: boolean, search?: boolean };
   params?: IRelationParams<SubModel, StaticModel, StaticModel>;
 };
@@ -167,11 +168,11 @@ export function record<ModelType extends Constructor<IModel>>(recType: ModelType
     const fields: IFieldParams<SubModel>[] = Reflect.getMetadata("fields", target.constructor, target.constructor.name) || [];
     const type = Reflect.getMetadata("design:type", target, propertyKey.toString());
     const isArray = type?.name === "Array";
-    const isObject = type?.name === "Object";
     const field = {
       name,
       isArray,
-      isObject,
+      isObject: false,
+      isRecord: true,
       type: recType,
     }
 

@@ -212,8 +212,9 @@ export class ModelInstance<SubModel extends Model> {
     return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
   }
 
-  public async update<U extends AsBasicModel<SubModel>>(data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await this.surql.client.update<AsBasicModel<SubModel>, U>(this.surql.getTableName(this.ctor), data);
+  public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
+    return await this.surql.client.update<AsBasicModel<SubModel>, U>(thing, data);
   }
 
   public async merge<U extends Partial<AsBasicModel<SubModel>>>(data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {

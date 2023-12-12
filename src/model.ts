@@ -2,7 +2,7 @@ import type { Constructor } from "type-fest";
 import type { AsBasicModel, CreateInput, IModel, KeyofRecs, LengthGreaterThanOne, ModelKeysDot, OnlyFields, RecFields, TransformFetches, TransformSelected, UnionToArray } from "./types/types.ts";
 import { ql, SQL, Instance, FnBody } from "./utils/query.ts";
 import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/surreal-types.ts";
-import { idx, prop } from "./decerators.ts";
+import { idx, prop, record } from "./decerators.ts";
 import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
 import { WhereSelector } from "./types/filter.ts";
@@ -84,8 +84,8 @@ export class Model implements IModel {
     return await new ModelInstance(this).insert(data);
   }
 
-  public static async update<SubModel extends Model, U extends AsBasicModel<SubModel>>(this: { new(): SubModel }, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await new ModelInstance(this).update(data);
+  public static async update<SubModel extends Model, U extends AsBasicModel<SubModel>>(this: { new(): SubModel }, id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    return await new ModelInstance(this).update(id, data);
   }
 
   public static async merge<SubModel extends Model, U extends Partial<AsBasicModel<SubModel>>>(this: { new(): SubModel }, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
@@ -111,7 +111,15 @@ export class Model implements IModel {
   }
 }
 
-export class RelationEdge<In extends IModel, Out extends IModel> extends Model {
-  @prop() public in!: In;
-  @prop() public out!: Out;
+export class ModelOf<T extends IModel> extends Model {
+  constructor(public model: T) {
+    super();
+  }
 }
+
+export class RelationEdge<In extends IModel, Out extends IModel> extends Model {
+  @record(ModelOf<In>) public in!: In;
+  @record(ModelOf<Out>) public out!: Out;
+}
+
+
