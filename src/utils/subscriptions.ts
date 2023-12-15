@@ -36,7 +36,6 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
   }
 
   public async return(): Promise<IteratorResult<ResultType, any>> {
-    console.log(`Unsubscribed from ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`);
     if (this.uuid)
       await (this.model as unknown as typeof Model).kill(this.uuid);
     this.isSubscribed = false;
@@ -59,7 +58,6 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
       this.uuid = uuid;
       this.isSubscribed = true;
       this.initilised = true;
-      console.log(`Subscribed to ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`);
     });
     return this;
   }
@@ -80,7 +78,6 @@ export class Subscriber<SubModel extends Model> extends EventEmitter {
       this.emit('dataAvailable');
     });
 
-    console.log(`Subscribed to ${(this.model as unknown as typeof Model).name} @ ${this.uuid}`)
     while (this.isSubscribed) {
       await this.waitForData();
       yield this.current;

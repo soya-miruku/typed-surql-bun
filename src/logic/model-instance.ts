@@ -217,8 +217,9 @@ export class ModelInstance<SubModel extends Model> {
     return await this.surql.client.update<AsBasicModel<SubModel>, U>(thing, data);
   }
 
-  public async merge<U extends Partial<AsBasicModel<SubModel>>>(data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await this.surql.client.merge<AsBasicModel<SubModel>, U>(this.surql.getTableName(this.ctor), data);
+  public async merge<U extends Partial<AsBasicModel<SubModel>>>(id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
+    return await this.surql.client.merge<AsBasicModel<SubModel>, U>(thing, data);
   }
 
   public async patch(data?: Patch[] | undefined): Promise<Patch[]> {

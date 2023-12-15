@@ -49,7 +49,6 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
           const isRelation = field?.type === "Relation";
           const isPrimitive = !(IsArray || isObject);
 
-          console.log("FIELD", key, field, value);
           if (isRelation) {
             const where = new WhereFilter(this.ctor, value, parentItem, true);
             // result += `${key}[WHERE ${where.parse()}]`;
@@ -69,8 +68,6 @@ export class WhereFilter<SubModel extends IModel, T extends WhereSelector<SubMod
             const where = new WhereFilter(this.ctor, value, parentItem, true);
             result += `${key}[WHERE ${where.parse()}]`;
           }
-        } else {
-          console.log("NO FIELD", key, this.previous, value);
         }
       }
     }

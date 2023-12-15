@@ -88,8 +88,8 @@ export class Model implements IModel {
     return await new ModelInstance(this).update(id, data);
   }
 
-  public static async merge<SubModel extends Model, U extends Partial<AsBasicModel<SubModel>>>(this: { new(): SubModel }, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await new ModelInstance(this).merge(data);
+  public static async merge<SubModel extends Model, U extends Partial<AsBasicModel<SubModel>>>(this: { new(): SubModel }, id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    return await new ModelInstance(this).merge(id, data);
   }
 
   public static async patch<SubModel extends Model>(this: { new(): SubModel }, data?: Patch[] | undefined): Promise<Patch[]> {
