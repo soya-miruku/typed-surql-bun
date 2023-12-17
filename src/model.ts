@@ -1,5 +1,5 @@
 import type { Constructor } from "type-fest";
-import type { AsBasicModel, CreateInput, IModel, KeyofRecs, LengthGreaterThanOne, ModelKeysDot, OnlyFields, RecFields, TransformFetches, TransformSelected, UnionToArray } from "./types/types.ts";
+import type { AsBasicModel, CreateInput, IModel, KeyofRecs, ModelKeysDot, OnlyFields, TransformFetches, TransformSelected } from "./types/types.ts";
 import { ql, SQL, Instance, FnBody } from "./utils/query.ts";
 import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/surreal-types.ts";
 import { idx, prop, record } from "./decerators.ts";
@@ -50,8 +50,8 @@ export class Model implements IModel {
     return await new ModelInstance(this).live(callback, opts);
   }
 
-  public static $subscribe<SubModel extends Model, Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(this: { new(): SubModel }, action?: LiveQueryResponse['action'] | "ALL", opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
-    return new ModelInstance(this).subscribe(action, opts);
+  public static $subscribe<SubModel extends Model, Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(this: { new(): SubModel }, opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
+    return new ModelInstance(this).subscribe(opts);
   }
 
   public static $unsubscribe<SubModel extends Model>(this: { new(): SubModel }) {

@@ -19,7 +19,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
   private current: ResultType | undefined;
   private uuid: string | undefined;
   private initilised = false;
-  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: { action?: LiveQueryResponse['action'] | "ALL" } & LiveOptions<SubModel, ModelKeys, Fetch>) {
+  constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
     this.emitter = new EventEmitter();
   }
 
@@ -51,7 +51,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
   public [Symbol.asyncIterator]() {
     // @ts-ignore
     (this.model as unknown as typeof Model).live<SubModel, Fetch, ModelKeys>((data) => {
-      if ((this._opts?.action && this._opts.action !== "ALL") && data.action !== this._opts.action) return;
+      if ((this._opts?.methods && this._opts.methods !== "*") && !this._opts.methods.includes(data.action)) return;
       this.current = data as ResultType;
       this.emitter.emit('dataAvailable');
     }, this?._opts).then((uuid) => {

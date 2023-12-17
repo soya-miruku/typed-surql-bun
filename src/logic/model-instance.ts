@@ -76,15 +76,17 @@ export class ModelInstance<SubModel extends Model> {
         where = new WhereFilter(this.ctor, opts.where).parse();
     }
 
-    const query = `LIVE SELECT ${opts?.diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where}` : ""}${opts?.fetch && opts.fetch.length > 0 ? ` FETCH ${opts.fetch.join(", ")}` : ""}`;
+    const actionSpecific = /*opts?.methods && opts.methods !== "*" ? `action in ${JSON.stringify(opts.methods)}` :*/ "";
+    const query = `LIVE SELECT ${opts?.diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where} ${actionSpecific ? `AND ${actionSpecific}` : ""}` : actionSpecific ? ` WHERE ${actionSpecific}` : ""}${opts?.fetch && opts.fetch.length > 0 ? ` FETCH ${opts.fetch.join(", ")}` : ""}`;
+    console.log(query)
     const response = await this.surql.client.query(query);
     if (response.length <= 0 || !response[0]) throw new Error("Live query failed to start");
     if (callback) this.surql.client.listenLive(response[0] as string, callback);
     return response[0] as string;
   }
 
-  public subscribe<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(action?: LiveQueryResponse['action'] | "ALL", opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
-    const subsriber = new SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys>(this.ctor, { action, ...opts });
+  public subscribe<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
+    const subsriber = new SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys>(this.ctor, { ...opts });
     this.activeSubscriptions = {
       isSubscribed: subsriber.isSubscribed,
       kill: async () => {
@@ -205,11 +207,12 @@ export class ModelInstance<SubModel extends Model> {
     if (!transformedData) {
       throw new Error("transformedData is undefined");
     }
-    if (Array.isArray(transformedData)) {
-      if (!transformedData.length) return [];
-      return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
-    }
-    return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
+    return await this.surql.client.insert<OnlyFields<SubModel>, U>(this.surql.getTableName(this.ctor), transformedData);
+    // if (Array.isArray(transformedData)) {
+    //   if (!transformedData.length) return [];
+    //   return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
+    // }
+    // return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
   }
 
   public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {

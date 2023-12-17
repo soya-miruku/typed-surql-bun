@@ -1,4 +1,4 @@
-import { OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, WhereSelector, RecFields, KeyofRecs } from "."
+import { OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, WhereSelector, KeyofRecs } from "."
 import { Model, SQL } from ".."
 
 export type InfoForTable = {
@@ -9,6 +9,7 @@ export type InfoForTable = {
   tables: Record<string, string>;
 }
 
+export type LiveMethods = "UPDATE" | "CREATE" | "DELETE" | "CLOSE";
 export type SelectOptions<SubModel extends Model,
   Key extends keyof OnlyFields<SubModel>,
   Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
@@ -31,7 +32,8 @@ export type LiveOptions<SubModel extends Model,
   ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>,
   Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model> = ModelKeysDot<Pick<SubModel, ModelKeys> & Model>,
 > = {
-  where?: SQL | WhereSelector<SubModel>,
-  fetch?: Fetch[],
-  diff?: boolean,
+    where?: SQL | WhereSelector<SubModel>;
+    fetch?: Fetch[];
+    diff?: boolean;
+    methods?: "*" | LiveMethods[];
 }
