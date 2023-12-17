@@ -30,7 +30,8 @@ export type MapQueryResult<T> = {
 };
 export type RawQueryResult = string | number | boolean | symbol | null | RawQueryResult[] | Record<string | number | symbol, unknown>;
 export type LiveQueryClosureReason = "SOCKET_CLOSED" | "QUERY_KILLED";
-export type LiveQueryResponse<T extends Record<string, unknown> = Record<string, unknown>> = {
+
+export type LiveQueryResponse<T extends Record<string, unknown> = Record<string, unknown>, DIFF extends boolean | undefined = undefined> = {
     action: "CLOSE";
     result?: never;
     detail: LiveQueryClosureReason;
@@ -39,39 +40,49 @@ export type LiveQueryResponse<T extends Record<string, unknown> = Record<string,
     result: T;
     detail?: never;
 };
+
 export type UnprocessedLiveQueryResponse<T extends Record<string, unknown> = Record<string, unknown>> = LiveQueryResponse<T> & {
     id: string;
 };
+
 type BasePatch<T = string> = {
     path: T;
 };
+
 export type AddPatch<T = string, U = unknown> = BasePatch<T> & {
     op: "add";
     value: U;
 };
+
 export type RemovePatch<T = string> = BasePatch<T> & {
     op: "remove";
 };
+
 export type ReplacePatch<T = string, U = unknown> = BasePatch<T> & {
     op: "replace";
     value: U;
 };
+
 export type ChangePatch<T = string, U = string> = BasePatch<T> & {
     op: "change";
     value: U;
 };
+
 export type CopyPatch<T = string, U = string> = BasePatch<T> & {
     op: "copy";
     from: U;
 };
+
 export type MovePatch<T = string, U = string> = BasePatch<T> & {
     op: "move";
     from: U;
 };
+
 export type TestPatch<T = string, U = unknown> = BasePatch<T> & {
     op: "test";
     value: U;
 };
+
 export type Patch = AddPatch | RemovePatch | ReplacePatch | ChangePatch | CopyPatch | MovePatch | TestPatch;
 export declare enum WebsocketStatus {
     OPEN = 0,

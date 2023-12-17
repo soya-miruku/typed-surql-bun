@@ -78,7 +78,6 @@ export class ModelInstance<SubModel extends Model> {
 
     const actionSpecific = /*opts?.methods && opts.methods !== "*" ? `action in ${JSON.stringify(opts.methods)}` :*/ "";
     const query = `LIVE SELECT ${opts?.diff ? "DIFF" : "*"} FROM ${this.surql.getTableName(this.ctor)}${where ? ` WHERE ${where} ${actionSpecific ? `AND ${actionSpecific}` : ""}` : actionSpecific ? ` WHERE ${actionSpecific}` : ""}${opts?.fetch && opts.fetch.length > 0 ? ` FETCH ${opts.fetch.join(", ")}` : ""}`;
-    console.log(query)
     const response = await this.surql.client.query(query);
     if (response.length <= 0 || !response[0]) throw new Error("Live query failed to start");
     if (callback) this.surql.client.listenLive(response[0] as string, callback);
