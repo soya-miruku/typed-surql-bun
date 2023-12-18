@@ -1,4 +1,4 @@
-import type { Constructor } from "type-fest";
+import type { Constructor, RequireAtLeastOne } from "type-fest";
 import type { AsBasicModel, CreateInput, IModel, KeyofRecs, ModelKeysDot, OnlyFields, TransformFetches, TransformSelected } from "./types/types.ts";
 import { ql, SQL, Instance, FnBody } from "./utils/query.ts";
 import { ActionResult, AnyAuth, LiveQueryResponse, Patch, Token } from "./types/surreal-types.ts";
@@ -75,9 +75,9 @@ export class Model implements IModel {
     return await new ModelInstance(this).select(keys, options);
   }
 
-  public static async create<SubModel extends Model>(this: { new(props?: CreateInput<SubModel>): SubModel }, props: CreateInput<SubModel>) {
+  public static async create<SubModel extends Model>(this: { new(props?: CreateInput<SubModel>): SubModel }, props: CreateInput<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>) {
     // Object.assign(this, props)
-    return await new ModelInstance(this).create(props); 
+    return await new ModelInstance(this).create(props, options); 
   }
 
   public static async insert<SubModel extends Model, U extends Partial<CreateInput<SubModel>>>(this: { new(): SubModel }, data: U | U[] | undefined): Promise<ActionResult<OnlyFields<SubModel>, U>[]> {

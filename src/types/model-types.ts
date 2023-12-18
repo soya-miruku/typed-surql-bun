@@ -25,6 +25,8 @@ export type SelectOptions<SubModel extends Model,
     order?: "ASC" | "DESC",
     ignoreRelations?: IgnoreRelations,
     logQuery?: boolean
+    parallel?: boolean,
+    timeout?: number,
   }
 
 

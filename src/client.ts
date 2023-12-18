@@ -165,7 +165,7 @@ class TypedSurQL {
       pipe: <NewModel extends Constructor<ModelBase>>(newModel: NewModel, fn: (q: typeof ql<T>, field: FnBody<Instance<NewModel>>) => SQL) => this.magic(newModel, fn, currentSql),
       exec: async <TResponse extends RawQueryResult[]>() => {
         if (!currentSql) throw new Error("No query was provided")
-        return (await this.client.query<TResponse>(currentSql)).at(-1) as TResponse
+        return (await this.client.query<TResponse>(currentSql)) as TResponse
       }
     }
   }

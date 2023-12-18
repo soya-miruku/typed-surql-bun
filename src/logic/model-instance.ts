@@ -1,9 +1,9 @@
 import { Surreal } from "surrealdb.js";
-import { Constructor } from "type-fest";
+import { Constructor, RequireAtLeastOne, SetOptional } from "type-fest";
 import { LiveQueryResponse, OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, TransformSelected, CreateInput, ActionResult, AsBasicModel, Patch, RecFields, TransformFetches, KeyofRecs } from "..";
 import { fx, ql, SQL, Instance, FnBody } from "../exports";
 import { Model, RelationEdge } from "../model";
-import { InfoForTable, LiveOptions } from "../types/model-types";
+import { InfoForTable, LiveOptions, SelectOptions } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
 import { SubscriptionAsyncIterator } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
@@ -107,18 +107,7 @@ export class ModelInstance<SubModel extends Model> {
     IgnoreRelations extends boolean | undefined = undefined
   >(
     keys: Key[] | "*",
-    options?: {
-      fetch?: Fetch[],
-      id?: string,
-      value?: WithValue extends LengthGreaterThanOne<UnionToArray<Key>> ? false : WithValue,
-      where?: SQL | WhereSelector<SubModel>,
-      limit?: number,
-      start?: number,
-      orderBy?: keyof OnlyFields<SubModel>,
-      order?: "ASC" | "DESC",
-      ignoreRelations?: IgnoreRelations,
-      logQuery?: boolean
-    }
+    options?: SelectOptions<SubModel, Key, Fetch, WithValue, IgnoreRelations>
   ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[]> {
     const tableName = this.surql.getTableName(this.ctor);
     const fields = keys === "*" ? this.surql.getFields(this.ctor)
@@ -153,9 +142,10 @@ export class ModelInstance<SubModel extends Model> {
     const orderBy = options?.orderBy ? ` ORDER BY ${this.surql.getField(this.ctor, options.orderBy).name.toString()} ${options?.order ?? "ASC"}` : "";
     const limit = options?.limit ? ` LIMIT ${options?.limit}` : "";
     const start = options?.start ? ` START ${options?.start}` : "";
-    const fetches = options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : ""
+    const fetches = options?.fetch && options?.fetch.length > 0 ? ` FETCH ${options?.fetch.join(", ")}` : "";
+    const suffix = this.getTimeoutParallelOptions({ parallel: options?.parallel, timeout: options?.timeout });
 
-    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${orderBy}${limit}${start}${fetches}`;
+    const query = `SELECT${options?.value ? " VALUE" : ""} ${selections.join(", ")} FROM ${from}${options?.where ? ` WHERE ${where}` : ""}${orderBy}${limit}${start}${fetches}${suffix}`;
     options?.logQuery && console.log(query);
     const results = (await this.surql.client.query(query)).at(-1) as TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[];
 
@@ -175,13 +165,14 @@ export class ModelInstance<SubModel extends Model> {
     return results;
   }
 
-  public async create(props: CreateInput<SubModel>) {
+  public async create(props: CreateInput<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>) {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const transformedProps: any = {};
     for (const [key, value] of Object.entries(props))
       transformedProps[key] = this.surql.transform(key, value as object | Model);
 
-    return (await this.surql.client.query(`CREATE ${this.surql.getTableName(this.ctor)} CONTENT ${JSON.stringify(transformedProps, floatJSONReplacer, 2)}`, { value: transformedProps }))?.at(-1) as ActionResult<OnlyFields<SubModel>, CreateInput<SubModel>>[];
+    const suffix = this.getTimeoutParallelOptions(options);
+    return (await this.surql.client.query(`CREATE ${this.surql.getTableName(this.ctor)} CONTENT ${JSON.stringify(transformedProps, floatJSONReplacer, 2)}${suffix}`, { value: transformedProps }))?.at(-1) as ActionResult<OnlyFields<SubModel>, CreateInput<SubModel>>[];
   }
 
   public async insert<U extends Partial<CreateInput<SubModel>>>(data: U | U[] | undefined): Promise<ActionResult<OnlyFields<SubModel>, U>[]> {
@@ -214,12 +205,12 @@ export class ModelInstance<SubModel extends Model> {
     // return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
   }
 
-  public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+  public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     return await this.surql.client.update<AsBasicModel<SubModel>, U>(thing, data);
   }
 
-  public async merge<U extends Partial<AsBasicModel<SubModel>>>(id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+  public async merge<U extends Partial<AsBasicModel<SubModel>>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     return await this.surql.client.merge<AsBasicModel<SubModel>, U>(thing, data);
   }
@@ -229,16 +220,24 @@ export class ModelInstance<SubModel extends Model> {
     return await (this.surql.client as Surreal).patch(this.surql.getTableName(this.ctor), data);
   }
 
-  public async delete(id?: string, where?: WhereSelector<SubModel>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+  public async delete(id?: string, where?: WhereSelector<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     const condition = where ? new WhereFilter(this.ctor, where).parse() : "";
     if (condition) {
-      return await this.surql.client.query(`DELETE FROM ${thing} WHERE ${condition}`);
+      const suffix = this.getTimeoutParallelOptions(options);
+      return await this.surql.client.query(`DELETE FROM ${thing} WHERE ${condition}${suffix}`);
     }
     return await this.surql.client.delete<AsBasicModel<SubModel>>(thing);
   }
 
-  public async relate<Via extends Constructor<RelationEdge<SubModel, To extends Constructor<infer X> ? X : never>>, To extends Constructor<Model>>(id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+  private getTimeoutParallelOptions(options?: SetOptional<{ parallel: boolean, timeout: number }, "parallel" | "timeout">) {
+    let suffix = "";
+    if (options?.timeout) suffix += ` TIMEOUT ${options.timeout}`;
+    if (options?.parallel) suffix += " PARALLEL";
+    return suffix;
+  }
+
+  public async relate<Via extends Constructor<RelationEdge<SubModel, To extends Constructor<infer X> ? X : never>>, To extends Constructor<Model>>(id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
     const viaCtor = Array.isArray(via) ? via[0] : via;
     const toCtor = Array.isArray(to) ? to[0] : to;
     const viaTableName = this.surql.getTableName(viaCtor)
@@ -246,7 +245,8 @@ export class ModelInstance<SubModel extends Model> {
 
     const viaName = Array.isArray(via) ? `${viaTableName}:${extractToId(via[1])}` : viaTableName;
     const from = `${this.surql.getTableName(this.ctor)}:${extractToId(id)}`;
-    return await this.surql.client.query(`RELATE ${from}->${viaName}->${`${toTableName}:${extractToId(to[1])}`}${content ? ` CONTENT ${JSON.stringify(content, floatJSONReplacer, 2)}` : ""};`);
+    const suffix = this.getTimeoutParallelOptions(options);
+    return await this.surql.client.query(`RELATE ${from}->${viaName}->${`${toTableName}:${extractToId(to[1])}`}${content ? ` CONTENT ${JSON.stringify(content, floatJSONReplacer, 2)}` : ""}${suffix};`);
   }
 
   public query<T, Ins = Instance<Constructor<SubModel>>>(fn: (q: typeof ql<T>, field: FnBody<Ins>) => SQL) {
