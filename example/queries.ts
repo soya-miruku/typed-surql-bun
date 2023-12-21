@@ -14,7 +14,8 @@ await TypedSurQL.init("http://127.0.0.1:8000", {
 
 
 console.log(await User.query((q, f) => q`SELECT * FROM $token`).exec())
-const result = await User.select(["todos", "friends", "bestFriend", "friendsMeta"], { fetch: ["friends", "bestFriend", "friendsMeta"], where: ql`name = "henry"`, logQuery: true, ignoreRelations: true });
+const name = "henry"
+const result = await User.select(["todos", "friends", "bestFriend", "friendsMeta"], { fetch: ["friends", "bestFriend", "friendsMeta"], where: { name }, logQuery: true, ignoreRelations: true });
 console.log(result, 'result')
 
 /** RETURNS (AS AN EXAMPLE)

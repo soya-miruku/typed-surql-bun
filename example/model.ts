@@ -33,3 +33,13 @@ export class User extends Model {
 
 export type UserObject = Static<User>;
 export type Todo = Static<typeof Todo>;
+
+
+@table({ name: "whitelist" })
+export class Whitelist extends Model {
+  @prop() declare id: string
+}
+
+
+const result = await Whitelist.select("*");
+console.log(result)

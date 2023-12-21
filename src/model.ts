@@ -7,6 +7,7 @@ import TypedSurQL from "./client.ts";
 import { ModelInstance } from "./logic/model-instance.ts";
 import { WhereSelector } from "./types/filter.ts";
 import { LiveOptions, SelectOptions } from "./types/model-types.ts";
+import { DurationType } from "./functions/duration.ts";
 
 export class Model implements IModel {
   @idx() public id!: string;
@@ -75,7 +76,7 @@ export class Model implements IModel {
     return await new ModelInstance(this).select(keys, options);
   }
 
-  public static async create<SubModel extends Model>(this: { new(props?: CreateInput<SubModel>): SubModel }, props: CreateInput<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>) {
+  public static async create<SubModel extends Model>(this: { new(props?: CreateInput<SubModel>): SubModel }, props: CreateInput<SubModel> | CreateInput<SubModel>[], options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>) {
     // Object.assign(this, props)
     return await new ModelInstance(this).create(props, options); 
   }
@@ -84,26 +85,26 @@ export class Model implements IModel {
     return await new ModelInstance(this).insert(data);
   }
 
-  public static async update<SubModel extends Model, U extends AsBasicModel<SubModel>>(this: { new(): SubModel }, id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await new ModelInstance(this).update(id, data);
+  public static async update<SubModel extends Model, U extends AsBasicModel<SubModel>>(this: { new(): SubModel }, id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    return await new ModelInstance(this).update(id, data, options);
   }
 
-  public static async merge<SubModel extends Model, U extends Partial<AsBasicModel<SubModel>>>(this: { new(): SubModel }, id?: string, data?: U | undefined): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
-    return await new ModelInstance(this).merge(id, data);
+  public static async merge<SubModel extends Model, U extends Partial<AsBasicModel<SubModel>>>(this: { new(): SubModel }, id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+    return await new ModelInstance(this).merge(id, data, options);
   }
 
   public static async patch<SubModel extends Model>(this: { new(): SubModel }, data?: Patch[] | undefined): Promise<Patch[]> {
     return await new ModelInstance(this).patch(data);
   }
 
-  public static async delete<SubModel extends Model>(this: { new(): SubModel }, id?: string, where?: WhereSelector<SubModel>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
-    return await new ModelInstance(this).delete(id, where);
+  public static async delete<SubModel extends Model>(this: { new(): SubModel }, id?: string, where?: WhereSelector<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+    return await new ModelInstance(this).delete(id, where, options);
   }
 
   public static async relate<SubModel extends Model,
     Via extends Constructor<RelationEdge<SubModel, To extends Constructor<infer X> ? X : never>>,
-    To extends Constructor<Model>>(this: { new(props?: Partial<Model>): SubModel }, id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
-    return await new ModelInstance(this).relate(id, via, to, content);
+    To extends Constructor<Model>>(this: { new(props?: Partial<Model>): SubModel }, id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+    return await new ModelInstance(this).relate(id, via, to, content, options);
   }
 
   public static query<SubModel extends Model, T, Ins = Instance<Constructor<SubModel>>>(this: { new(): SubModel }, fn: (q: typeof ql<T>, field: FnBody<Ins>) => SQL) {

@@ -1,5 +1,6 @@
 import { OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, WhereSelector, KeyofRecs } from "."
 import { Model, SQL } from ".."
+import { DurationType } from "../functions/duration";
 
 export type InfoForTable = {
   events: Record<string, string>;
@@ -26,7 +27,7 @@ export type SelectOptions<SubModel extends Model,
     ignoreRelations?: IgnoreRelations,
     logQuery?: boolean
     parallel?: boolean,
-    timeout?: number,
+    timeout?: DurationType,
   }
 
 

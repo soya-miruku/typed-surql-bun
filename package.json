@@ -1,37 +1,37 @@
 {
-	"name": "@soyamiruku/typed-surql-bun",
-	"description": "SurrealDB Extra",
-	"version": "1.9.4",
-	"module": "src/index.ts",
-	"type": "module",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/soya-miruku/typed-surql-bun.git"
-	},
-	"author": {
-		"name": "Soya Miruku",
-		"url": "https://github.com/soya-miruku"
-	},
-	"exports": {
-		".": "./src/index.ts",
-		"./client": "./src/client.ts",
-		"./types": "./src/types/index.ts",
-		"./functions": "./src/functions/index.ts"
-	},
-	"scripts": {
-		"build": "bun build ./src/index.ts --splitting --format esm --outdir ./dist"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^1.4.1",
-		"bun-types": "latest",
-		"type-fest": "^4.8.3"
-	},
-	"peerDependencies": {
-		"typescript": "^5.3.3"
-	},
-	"dependencies": {
-		"reflect-metadata": "^0.2.1",
-		"@sinclair/typebox": "^0.31.28",
-		"surrealdb.js": "^0.11.0"
-	}
+  "name": "@soyamiruku/typed-surql-bun",
+  "description": "SurrealDB Extra",
+  "version": "1.9.8",
+  "module": "src/index.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soya-miruku/typed-surql-bun.git"
+  },
+  "author": {
+    "name": "Soya Miruku",
+    "url": "https://github.com/soya-miruku"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./types": "./src/types/index.ts",
+    "./functions": "./src/functions/index.ts"
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --splitting --format esm --outdir ./dist"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.4.1",
+    "bun-types": "latest",
+    "type-fest": "^4.8.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.1",
+    "@sinclair/typebox": "^0.31.28",
+    "surrealdb.js": "^0.11.0"
+  }
 }

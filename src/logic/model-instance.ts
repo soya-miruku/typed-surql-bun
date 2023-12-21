@@ -9,6 +9,7 @@ import { SubscriptionAsyncIterator } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
 import { WhereFilter } from "./where.ts";
 import { WhereSelector } from "../types/filter.ts";
+import { DurationType } from "../functions/duration.ts";
 
 export class ModelInstance<SubModel extends Model> {
   private activeSubscriptions: {
@@ -101,11 +102,8 @@ export class ModelInstance<SubModel extends Model> {
       this.activeSubscriptions = null;
     }
   }
-  public async select<Key extends keyof OnlyFields<SubModel>,
-    Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
-    WithValue extends boolean | undefined = undefined,
-    IgnoreRelations extends boolean | undefined = undefined
-  >(
+
+  public async select<Key extends keyof OnlyFields<SubModel>, Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never, WithValue extends boolean | undefined = undefined, IgnoreRelations extends boolean | undefined = undefined>(
     keys: Key[] | "*",
     options?: SelectOptions<SubModel, Key, Fetch, WithValue, IgnoreRelations>
   ): Promise<TransformSelected<SubModel, Key, Fetch, WithValue, IgnoreRelations>[]> {
@@ -165,14 +163,39 @@ export class ModelInstance<SubModel extends Model> {
     return results;
   }
 
-  public async create(props: CreateInput<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>) {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    const transformedProps: any = {};
-    for (const [key, value] of Object.entries(props))
-      transformedProps[key] = this.surql.transform(key, value as object | Model);
+  public async create(data: CreateInput<SubModel> | CreateInput<SubModel>[], options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>) {
+    let transformedData: CreateInput<SubModel> | CreateInput<SubModel>[] | undefined;
 
+    if (!data) return [];
+    if (Array.isArray(data)) {
+      transformedData = data.map((val) => {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        const transformedProps: any = {};
+        for (const [key, value] of Object.entries(val))
+          transformedProps[key] = this.surql.transform(key, value as object | Model);
+        return transformedProps;
+      });
+    } else {
+      const transformedProps: any = {};
+      for (const [key, value] of Object.entries(data))
+        transformedProps[key] = this.surql.transform(key, value as object | Model);
+      transformedData = transformedProps;
+    }
+
+    if (!transformedData) {
+      throw new Error("transformedData is undefined");
+    }
+
+    let query: string | undefined;
     const suffix = this.getTimeoutParallelOptions(options);
-    return (await this.surql.client.query(`CREATE ${this.surql.getTableName(this.ctor)} CONTENT ${JSON.stringify(transformedProps, floatJSONReplacer, 2)}${suffix}`, { value: transformedProps }))?.at(-1) as ActionResult<OnlyFields<SubModel>, CreateInput<SubModel>>[];
+    if (Array.isArray(transformedData)) {
+      const lines = transformedData.map((val) => `CREATE ${this.surql.getTableName(this.ctor)} CONTENT ${JSON.stringify(val, floatJSONReplacer, 2)}${suffix}`);
+      query = lines.join(";\n");
+    } else {
+      query = `CREATE ${this.surql.getTableName(this.ctor)} CONTENT ${JSON.stringify(transformedData, floatJSONReplacer, 2)}${suffix}`;
+    }
+
+    return (await this.surql.client.query(query))?.at(-1) as ActionResult<OnlyFields<SubModel>, CreateInput<SubModel>>[];
   }
 
   public async insert<U extends Partial<CreateInput<SubModel>>>(data: U | U[] | undefined): Promise<ActionResult<OnlyFields<SubModel>, U>[]> {
@@ -197,20 +220,26 @@ export class ModelInstance<SubModel extends Model> {
     if (!transformedData) {
       throw new Error("transformedData is undefined");
     }
+
+    if (Array.isArray(transformedData) && transformedData.length > 100_000) {
+      console.warn("Inserting more than 100,000 records at once is not recommended. Consider using the `create` method instead.");
+      // const chunks = createChunks(transformedData, transformedData.length / 100);
+      // const results: ActionResult<OnlyFields<SubModel>, U>[][] = [];
+      // for (const chunk of chunks) {
+      //   results.push(await this.surql.client.insert<OnlyFields<SubModel>, U>(this.surql.getTableName(this.ctor), chunk));
+      // }
+      // return results.flat();
+    }
+
     return await this.surql.client.insert<OnlyFields<SubModel>, U>(this.surql.getTableName(this.ctor), transformedData);
-    // if (Array.isArray(transformedData)) {
-    //   if (!transformedData.length) return [];
-    //   return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
-    // }
-    // return (await this.surql.client.query(`INSERT INTO ${this.surql.getTableName(this.ctor)} ${JSON.stringify(transformedData, floatJSONReplacer, 2)}`))?.at(-1) as ActionResult<OnlyFields<SubModel>, U>[];
   }
 
-  public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+  public async update<U extends AsBasicModel<SubModel>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     return await this.surql.client.update<AsBasicModel<SubModel>, U>(thing, data);
   }
 
-  public async merge<U extends Partial<AsBasicModel<SubModel>>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
+  public async merge<U extends Partial<AsBasicModel<SubModel>>>(id?: string, data?: U | undefined, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>, U>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     return await this.surql.client.merge<AsBasicModel<SubModel>, U>(thing, data);
   }
@@ -220,7 +249,7 @@ export class ModelInstance<SubModel extends Model> {
     return await (this.surql.client as Surreal).patch(this.surql.getTableName(this.ctor), data);
   }
 
-  public async delete(id?: string, where?: WhereSelector<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+  public async delete(id?: string, where?: WhereSelector<SubModel>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
     const thing = id ? `${this.surql.getTableName(this.ctor)}:${extractToId(id)}` : this.surql.getTableName(this.ctor);
     const condition = where ? new WhereFilter(this.ctor, where).parse() : "";
     if (condition) {
@@ -230,14 +259,14 @@ export class ModelInstance<SubModel extends Model> {
     return await this.surql.client.delete<AsBasicModel<SubModel>>(thing);
   }
 
-  private getTimeoutParallelOptions(options?: SetOptional<{ parallel: boolean, timeout: number }, "parallel" | "timeout">) {
+  private getTimeoutParallelOptions(options?: SetOptional<{ parallel: boolean, timeout: DurationType }, "parallel" | "timeout">) {
     let suffix = "";
     if (options?.timeout) suffix += ` TIMEOUT ${options.timeout}`;
     if (options?.parallel) suffix += " PARALLEL";
     return suffix;
   }
 
-  public async relate<Via extends Constructor<RelationEdge<SubModel, To extends Constructor<infer X> ? X : never>>, To extends Constructor<Model>>(id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: number }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
+  public async relate<Via extends Constructor<RelationEdge<SubModel, To extends Constructor<infer X> ? X : never>>, To extends Constructor<Model>>(id: string, via: [Via, string] | Via, to: [To, string], content?: Partial<Omit<InstanceType<Via>, "in" | "out">>, options?: RequireAtLeastOne<{ parallel: boolean, timeout: DurationType }>): Promise<ActionResult<AsBasicModel<SubModel>>[]> {
     const viaCtor = Array.isArray(via) ? via[0] : via;
     const toCtor = Array.isArray(to) ? to[0] : to;
     const viaTableName = this.surql.getTableName(viaCtor)
