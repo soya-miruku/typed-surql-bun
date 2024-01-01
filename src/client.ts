@@ -91,9 +91,9 @@ class TypedSurQL {
     })
   }
 
-  public init<Strategy extends boolean>(url: string, opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
-  public init<Strategy extends boolean>(opts: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
-  public init<Strategy extends boolean>(urlOrOpts?: string | (ConnectionOptions & { websocket?: Strategy }), opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">> {
+  public async init<Strategy extends boolean>(url: string, opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
+  public async init<Strategy extends boolean>(opts: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">>;
+  public async init<Strategy extends boolean>(urlOrOpts?: string | (ConnectionOptions & { websocket?: Strategy }), opts?: ConnectionOptions & { websocket?: Strategy }): Promise<SurrealStratClient<Strategy extends true ? "WS" : "HTTP">> {
     let url: string | undefined;
     if (typeof urlOrOpts === 'string') {
       url = urlOrOpts;
@@ -105,7 +105,7 @@ class TypedSurQL {
       this.url = url;
     }
     this.setStrategy(opts?.websocket);
-    return this.connect(opts);
+    return await this.connect(opts);
   }
 
   public async scopedAuth(auth: AnyAuth | Token, url?: string) {

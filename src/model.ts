@@ -24,7 +24,7 @@ export class Model implements IModel {
     return TypedSurQL.getTableName(this);
   }
 
-  constructor(props?: Partial<IModel>) {
+  constructor(props?: Partial<Model>) {
     this.id = props?.id ?? "";
     Object.assign(this, props);
   }
@@ -112,13 +112,13 @@ export class Model implements IModel {
   }
 }
 
-export class ModelOf<T extends IModel> extends Model {
+export class ModelOf<T extends Model> extends Model {
   constructor(public model: T) {
     super();
   }
 }
 
-export class RelationEdge<In extends IModel, Out extends IModel> extends Model {
+export class RelationEdge<In extends Model, Out extends Model> extends Model {
   @record(ModelOf<In>) public in!: In;
   @record(ModelOf<Out>) public out!: Out;
 }

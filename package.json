@@ -1,7 +1,7 @@
 {
   "name": "@soyamiruku/typed-surql-bun",
   "description": "SurrealDB Extra",
-  "version": "1.9.8",
+  "version": "2.0.2",
   "module": "src/index.ts",
   "type": "module",
   "repository": {
@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "reflect-metadata": "^0.2.1",
-    "@sinclair/typebox": "^0.31.28",
+    "@sinclair/typebox": "^0.32.4",
     "surrealdb.js": "^0.11.0"
   }
 }

@@ -1,4 +1,4 @@
-import { OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, WhereSelector, KeyofRecs } from "."
+import { OnlyFields, ModelKeysDot, LengthGreaterThanOne, UnionToArray, WhereSelector, KeyofRecs, IModel } from "."
 import { Model, SQL } from ".."
 import { DurationType } from "../functions/duration";
 
@@ -11,7 +11,7 @@ export type InfoForTable = {
 }
 
 export type LiveMethods = "UPDATE" | "CREATE" | "DELETE" | "CLOSE";
-export type SelectOptions<SubModel extends Model,
+export type SelectOptions<SubModel extends IModel,
   Key extends keyof OnlyFields<SubModel>,
   Fetch extends ModelKeysDot<Pick<SubModel, Key> & Model> = never,
   WithValue extends boolean | undefined = undefined,

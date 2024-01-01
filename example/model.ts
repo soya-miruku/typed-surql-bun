@@ -39,7 +39,3 @@ export type Todo = Static<typeof Todo>;
 export class Whitelist extends Model {
   @prop() declare id: string
 }
-
-
-const result = await Whitelist.select("*");
-console.log(result)
