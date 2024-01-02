@@ -28,7 +28,9 @@ await User.insert(Array.from({ length: 10000 }).map((_, i) => ({
   password: "12"
 })));
 
-console.log(performance.now() - timenow, "ms")
+console.log(performance.now() - timenow, "ms");
+
+await User.new(TypedSurQL).select("*")
 
 // const henry2 = await User.insert({ name: "henry2", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
 // const liveQuery = User.$subscribe("ALL", { where: { name: "asda" }, fetch: [] });

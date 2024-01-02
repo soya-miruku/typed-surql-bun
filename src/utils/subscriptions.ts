@@ -2,10 +2,9 @@ import { Constructor } from "type-fest";
 import { LiveQueryResponse } from "../types/surreal-types";
 import EventEmitter from "events";
 import { Model } from "../model";
-import { Static } from "../exports";
-import { sleep } from "./helper";
-import { FunctionType, KeyofRecs, ModelKeysDot, TransformFetches } from "../types";
+import { KeyofRecs, ModelKeysDot, TransformFetches } from "../types";
 import { LiveOptions } from "../types/model-types";
+import { $$asyncIterator } from 'iterall';
 
 export type ExtractModelClass<T extends Model> = T extends Constructor<Model> ? T : never;
 
@@ -48,7 +47,7 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
     return Promise.resolve({ value: undefined, done: true });
   }
 
-  public [Symbol.asyncIterator]() {
+  public [$$asyncIterator]() {
     // @ts-ignore
     (this.model as unknown as typeof Model).live<SubModel, Fetch, ModelKeys>((data) => {
       if ((this._opts?.methods && this._opts.methods !== "*") && !this._opts.methods.includes(data.action)) return;
@@ -62,48 +61,4 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
     return this;
   }
 
-}
-
-export class Subscriber<SubModel extends Model> extends EventEmitter {
-  constructor(private readonly model: SubModel) {
-    super();
-  }
-  private current: LiveQueryResponse<Static<SubModel>> | undefined;
-  private uuid: string | undefined;
-  public isSubscribed = false;
-
-  async *subscriber() {
-    this.uuid = await (this.model as unknown as typeof Model).live((data) => {
-      this.current = data as LiveQueryResponse<Static<SubModel>>;
-      this.emit('dataAvailable');
-    });
-
-    while (this.isSubscribed) {
-      await this.waitForData();
-      yield this.current;
-      this.current = undefined;
-      await sleep(48);
-    }
-  }
-
-  async waitForData() {
-    return new Promise((resolve) => {
-      this.once('dataAvailable', resolve);
-    });
-  }
-
-  subscribe() {
-    this.isSubscribed = true;
-    return this.subscriber();
-  }
-
-  unsubscribe() {
-    this.isSubscribed = false;
-    if (this.uuid)
-      (this.model as unknown as typeof Model).kill(this.uuid);
-  }
-
-  [Symbol.asyncIterator]() {
-    return new SubscriptionAsyncIterator(this.model as unknown as typeof Model);
-  }
 }

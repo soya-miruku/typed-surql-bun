@@ -38,6 +38,10 @@ export class Model implements IModel {
     }
   }
 
+  public static new<SubModel extends Model>(this: { new(): SubModel }, instance: typeof TypedSurQL) {
+    return new ModelInstance(this, instance)
+  }
+
   public static async migrate<SubModel extends Model>(this: { new(): SubModel }) {
     return await new ModelInstance(this).migrate();
   }
