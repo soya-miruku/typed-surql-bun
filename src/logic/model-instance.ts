@@ -5,7 +5,7 @@ import { fx, ql, SQL, Instance, FnBody } from "../exports";
 import { Model, RelationEdge } from "../model";
 import { InfoForTable, LiveOptions, SelectOptions } from "../types/model-types";
 import { floatJSONReplacer, extractToId } from "../utils/parsers";
-import { SubscriptionAsyncIterator } from "../utils/subscriptions";
+import { SubscriptionAsyncIterable } from "../utils/subscriptions";
 import TypedSurQL from "../client.ts";
 import { WhereFilter } from "./where.ts";
 import { WhereSelector } from "../types/filter.ts";
@@ -86,11 +86,11 @@ export class ModelInstance<SubModel extends Model> {
   }
 
   public subscribe<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
-    const subsriber = new SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys>(this.ctor, { ...opts });
+    const subsriber = new SubscriptionAsyncIterable<SubModel, Fetch, ModelKeys>(this.ctor, { ...opts });
     this.activeSubscriptions = {
       isSubscribed: subsriber.isSubscribed,
       kill: async () => {
-        await subsriber.return();
+        await subsriber.kill();
       }
     }
     return subsriber;

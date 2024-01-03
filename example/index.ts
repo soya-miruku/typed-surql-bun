@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import TypedSurQL from '../src/client.ts';
 import { User } from "./model.ts";
+import { sleep } from "../src/utils/helper.ts";
 
 console.log("starting");
 
@@ -15,6 +16,19 @@ await TypedSurQL.init("ws://127.0.0.1:8000/rpc", {
 });
 
 console.log("connected");
+
+const sub = User.$subscribe();
+
+setTimeout(async () => {
+  const bingo = await User.create({ name: "bingo", bestFriend: "user:0", todos: [{ title: "test", completed: false }, { title: "test2", completed: true }], email: "milking@email.com", password: "123" });
+  // const henry = await User.create({ name: "henry", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
+  await sleep(10)
+  await sub.kill()
+}, 1000);
+
+for await (const data of sub) {
+  console.log(data);
+}
 
 const bingo = await User.create({ name: "bingo", bestFriend: "user:0", todos: [{ title: "test", completed: false }, { title: "test2", completed: true }], email: "milking@email.com", password: "123" });
 const henry = await User.create({ name: "henry", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
