@@ -9,10 +9,7 @@ import { sleep } from "./helper";
 
 export type ExtractModelClass<T extends Model> = T extends Constructor<Model> ? T : never;
 
-export class SubscriptionAsyncIterator<SubModel extends Model,
-  Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>,
-  ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>,
-  ResultType = LiveQueryResponse<TransformFetches<SubModel, Fetch>>,
+export class SurrealAsyncIterator<SubModel extends Model, Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>, ResultType = LiveQueryResponse<TransformFetches<SubModel, Fetch>>,
   TReturn = any,
   TNext = undefined
 > implements AsyncIterator<ResultType | undefined> {
@@ -77,22 +74,23 @@ export class SubscriptionAsyncIterator<SubModel extends Model,
 export class SubscriptionAsyncIterable<SubModel extends Model,
   Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>,
   ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>, ResultType = LiveQueryResponse<TransformFetches<SubModel, Fetch>>> implements AsyncIterable<ResultType | undefined>{
-  private readonly sub: SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys, ResultType>;
+  private readonly sub: SurrealAsyncIterator<SubModel, Fetch, ModelKeys, ResultType>;
   constructor(private readonly model: Constructor<SubModel>, private readonly _opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
-    this.sub = new SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys, ResultType>(model, _opts);
+    this.sub = new SurrealAsyncIterator<SubModel, Fetch, ModelKeys, ResultType>(model, _opts);
   }
 
   public get isSubscribed() {
     return this.sub.isSubscribed;
   }
 
-  public async kill() {
+  public async stop() {
     return await this.sub.return();
   }
 
-  [Symbol.asyncIterator](): SubscriptionAsyncIterator<SubModel, Fetch, ModelKeys, ResultType> {
+  [Symbol.asyncIterator](): SurrealAsyncIterator<SubModel, Fetch, ModelKeys, ResultType> {
     const model = this.model as unknown as typeof Model & Constructor<SubModel>;
     console.log("subscribing", model);
+
     (model).live<SubModel, Fetch, ModelKeys>((data) => {
       if ((this._opts?.methods && this._opts.methods !== "*") && !this._opts.methods.includes(data.action)) return;
       this.sub.newData(data as ResultType);

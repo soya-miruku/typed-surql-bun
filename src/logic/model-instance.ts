@@ -14,7 +14,7 @@ import { DurationType } from "../functions/duration.ts";
 export class ModelInstance<SubModel extends Model> {
   private activeSubscriptions: {
     isSubscribed: boolean,
-    kill: () => Promise<void>,
+    stop: () => Promise<void>,
   } | null = null
   constructor(private readonly ctor: Constructor<SubModel>, private readonly surql = TypedSurQL) { }
 
@@ -87,10 +87,11 @@ export class ModelInstance<SubModel extends Model> {
 
   public subscribe<Fetch extends ModelKeysDot<Pick<SubModel, ModelKeys> & Model>, ModelKeys extends KeyofRecs<SubModel> = KeyofRecs<SubModel>>(opts?: LiveOptions<SubModel, ModelKeys, Fetch>) {
     const subsriber = new SubscriptionAsyncIterable<SubModel, Fetch, ModelKeys>(this.ctor, { ...opts });
+
     this.activeSubscriptions = {
       isSubscribed: subsriber.isSubscribed,
-      kill: async () => {
-        await subsriber.kill();
+      stop: async () => {
+        await subsriber.stop();
       }
     }
     return subsriber;
@@ -98,7 +99,7 @@ export class ModelInstance<SubModel extends Model> {
 
   public unsubscribe() {
     if (this.activeSubscriptions?.isSubscribed) {
-      this.activeSubscriptions.kill();
+      this.activeSubscriptions.stop();
       this.activeSubscriptions = null;
     }
   }

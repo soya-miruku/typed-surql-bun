@@ -23,7 +23,7 @@ setTimeout(async () => {
   const bingo = await User.create({ name: "bingo", bestFriend: "user:0", todos: [{ title: "test", completed: false }, { title: "test2", completed: true }], email: "milking@email.com", password: "123" });
   // const henry = await User.create({ name: "henry", todos: [{ title: "test", completed: false }], email: "something@email.com", password: "12" });
   await sleep(10)
-  await sub.kill()
+  await sub.stop()
 }, 1000);
 
 for await (const data of sub) {
