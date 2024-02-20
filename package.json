@@ -1,7 +1,7 @@
 {
   "name": "@soyamiruku/typed-surql-bun",
   "description": "SurrealDB Extra",
-  "version": "2.10.1",
+  "version": "2.10.4",
   "module": "src/index.ts",
   "type": "module",
   "repository": {
@@ -22,9 +22,9 @@
     "build": "bun build ./src/index.ts --splitting --format esm --outdir ./dist"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.4.1",
+    "@biomejs/biome": "^1.5.3",
     "bun-types": "latest",
-    "type-fest": "^4.8.3"
+    "type-fest": "^4.10.2"
   },
   "peerDependencies": {
     "typescript": "^5.3.3"
@@ -32,7 +32,7 @@
   "dependencies": {
     "iterall": "^1.3.0",
     "reflect-metadata": "^0.2.1",
-    "@sinclair/typebox": "^0.32.4",
+    "@sinclair/typebox": "^0.32.14",
     "surrealdb.js": "^0.11.0"
   }
 }
